@@ -1,8 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, TouchableHighlight } from 'react-native';
+import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, TouchableHighlight, GestureResponderEvent, Button, Pressable } from 'react-native';
 import { FontAwesome, Ionicons } from '@expo/vector-icons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParams } from '../App';
 import i18n from '../localization/i18n';
 import { useSelector } from 'react-redux';
 import { RootState } from '../storage/reduxStore';
@@ -12,6 +11,8 @@ import { useFocusEffect } from '@react-navigation/native';
 import TypeWriterEffect from '../components/TypeWriterEffect';
 import { getRandomHealthTip } from '../utils/utilityFunctions';
 import * as Speech from 'expo-speech';
+import { LandingStackParams } from './LandingPage';
+import { useTooltip } from '../context/TooltipProvider';
 
 const featuredDoctors = [
   {
@@ -32,7 +33,7 @@ const featuredDoctors = [
   // Add more doctors as needed
 ];
 
-type Props = NativeStackScreenProps<RootStackParams, 'Home'>
+type Props = NativeStackScreenProps<LandingStackParams, 'Home'>
 
 const Home: React.FC<Props> = ({navigation}) => {
   const language = useSelector((state: RootState) => state.language.locale);
@@ -41,6 +42,7 @@ const Home: React.FC<Props> = ({navigation}) => {
   const { microphoneResult } = useMicrophone();
   const microphoneResultRef = useRef<string | null>(null);
   const [healthTip, setHealthTip] = useState('');
+  const { showTooltip, hideTooltip } = useTooltip();
 
   useFocusEffect(
     useCallback(() => {
@@ -71,10 +73,9 @@ const Home: React.FC<Props> = ({navigation}) => {
     if (!command) return;
 
     command = command.toLowerCase();
-    console.log('Voice Command:', command);
 
     if (command.includes('settings')) {
-      navigation.navigate('Settings');
+      // navigation.navigate('Settings');
     } else if (command.includes('appointments')) {
       navigation.navigate('Appointment');
     } else if (command.includes('about')) {
@@ -102,6 +103,12 @@ const Home: React.FC<Props> = ({navigation}) => {
 
   };
 
+  const handleLongPress = (content: string) => (event: GestureResponderEvent) => {
+    const { pageX, pageY } = event.nativeEvent;
+    showTooltip(content, pageX, pageY);
+    setTimeout(() => hideTooltip(), 3000); // Auto-hide after 3 seconds
+  };
+
   return (
     <ScrollView style={styles.container}>
       {/* Header */}
@@ -120,7 +127,7 @@ const Home: React.FC<Props> = ({navigation}) => {
       <View style={styles.userInfoContainer}>
         <Text style={[styles.header, {fontSize: 18 + adjustmentFactor}]}>{i18n.t('hello_user')}</Text>
         <View style={styles.iconsContainer}>
-          <TouchableOpacity style={[styles.iconButton, {backgroundColor: theme.primaryMain}]} onPress={() => navigation.navigate("Settings")}>
+          <TouchableOpacity style={[styles.iconButton, {backgroundColor: theme.primaryMain}]} onPress={() => {}}>
             <FontAwesome name="cog" size={24} color="white" />
           </TouchableOpacity>
           <TouchableOpacity style={[styles.iconButton, {backgroundColor: theme.primaryMain}]}>
@@ -151,7 +158,7 @@ const Home: React.FC<Props> = ({navigation}) => {
       </ScrollView>
 
       {/* Book Appointment Button */}
-      <TouchableOpacity style={[styles.bookButton, {backgroundColor: theme.primaryMain}]} onPress={() => { navigation.navigate("Appointment")}}>
+      <TouchableOpacity style={[styles.bookButton, {backgroundColor: theme.primaryMain}]} onPress={() => { navigation.navigate("DoctorCategory")}} onLongPress={handleLongPress("book an appointment with a doctor")}>
         <Text style={[styles.bookButtonText, {fontSize: 18 + adjustmentFactor}]}>{i18n.t('book_appointment')}</Text>
       </TouchableOpacity>
     </ScrollView>

@@ -9,11 +9,11 @@ import { useTheme } from '../context/ThemeProvider';
 import { useFocusEffect } from '@react-navigation/native';
 import { useMicrophone } from '../context/MicrophoneProvider';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParams } from '../App';
 import * as Notifications from 'expo-notifications';
 import {storage as mmkvStorage} from '../storage/mmkvStorage'
+import { RootTabParams } from '../App';
 
-type Props = NativeStackScreenProps<RootStackParams, 'Settings'>
+type Props = NativeStackScreenProps<RootTabParams, 'Settings'>
 
 const Settings: React.FC<Props> = ({navigation}) => {
   const language = useSelector((state: RootState) => state.language.locale);

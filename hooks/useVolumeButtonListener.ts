@@ -5,13 +5,19 @@ import KeyEvent from 'react-native-keyevent';
 import Voice from '@react-native-voice/voice';
 
 const useVolumeButtonListener = () => {
-  const { setMicrophoneResult } = useMicrophone();
+  const { setMicrophoneResult, setIsListening } = useMicrophone();
   const lastKeyUpTimeRef = useRef(0);
+
+  Voice.onSpeechError = () => {
+    setIsListening(false);
+}
+
 
   Voice.onSpeechResults = speechResult => {
       if(speechResult.value){
           setMicrophoneResult(speechResult.value[0])
-      }
+        }
+      setIsListening(false);
   }
 
   useEffect(() => {
@@ -36,6 +42,7 @@ const useVolumeButtonListener = () => {
         );
         if (voicePermissionReq === PermissionsAndroid.RESULTS.GRANTED) {
             Voice.start('en-US');
+            setIsListening(true)
         } else {
           console.log("Microphone permission denied");
         }
