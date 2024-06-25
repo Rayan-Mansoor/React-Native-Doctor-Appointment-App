@@ -13,29 +13,18 @@ import { getRandomHealthTip } from '../utils/utilityFunctions';
 import * as Speech from 'expo-speech';
 import { LandingStackParams } from './LandingPage';
 import { useTooltip } from '../context/TooltipProvider';
+import doctorsList, { Doctor } from '../storage/data/en_doctor_list';
 
-const featuredDoctors = [
-  {
-    name: 'Dr. John Doe',
-    specialty: 'Heart Surgeon',
-    location: 'London',
-    image: require('../assets/doctor1.jpg'),
-    rating: 4.5,
-  },
-  {
-    name: 'Dr. Jane Smith',
-    specialty: 'Dentist',
-    location: 'New York',
-    image: require('../assets/doctor2.jpeg'),
-    rating: 4.7,
-  },
-  
-  // Add more doctors as needed
-];
+const doctors: Doctor[] = doctorsList;
+
+doctors.sort((a, b) => b.rating - a.rating);
+
+const featuredDoctors: Doctor[] = doctors.slice(0, 2);
 
 type Props = NativeStackScreenProps<LandingStackParams, 'Home'>
 
 const Home: React.FC<Props> = ({navigation}) => {
+  const upcomingAppointments = useSelector((state: RootState) => state.appointments.upcomingAppointments);
   const language = useSelector((state: RootState) => state.language.locale);
   const adjustmentFactor = useSelector((state: RootState) => state.size.adjustmentFactor);
   const theme = useTheme();
@@ -77,11 +66,11 @@ const Home: React.FC<Props> = ({navigation}) => {
     if (command.includes('settings')) {
       // navigation.navigate('Settings');
     } else if (command.includes('appointments')) {
-      navigation.navigate('Appointment');
+      // navigation.navigate('Appointment');
     } else if (command.includes('about')) {
       navigation.navigate('About');
     } else if (command.includes('book appointment')) {
-      navigation.navigate('Appointment');
+      // navigation.navigate('Appointment');
     } else if (command.includes('featured doctors')) {
       // Scroll to featured doctors section
       // Assuming you have a ref to the ScrollView and can scroll to a specific position
@@ -103,6 +92,11 @@ const Home: React.FC<Props> = ({navigation}) => {
 
   };
 
+  const handlefeaturedDoctor = (doc: Doctor) => {
+    navigation.navigate('Appointment', { doctor: doc })
+
+  };
+
   const handleLongPress = (content: string) => (event: GestureResponderEvent) => {
     const { pageX, pageY } = event.nativeEvent;
     showTooltip(content, pageX, pageY);
@@ -111,9 +105,9 @@ const Home: React.FC<Props> = ({navigation}) => {
 
   return (
     <ScrollView style={styles.container}>
-      {/* Header */}
       <Text style={[styles.header, {fontSize: 24 + adjustmentFactor}]}>{i18n.t('welcome')}</Text>
 
+      <Text style={[styles.sectionHeader, {fontSize: 20 + adjustmentFactor}]}>{i18n.t('daily_tips')}</Text>
       <View style={styles.card}>
       <TypeWriterEffect
           text={healthTip}
@@ -124,28 +118,19 @@ const Home: React.FC<Props> = ({navigation}) => {
         </TouchableOpacity>
       </View>
 
-      <View style={styles.userInfoContainer}>
-        <Text style={[styles.header, {fontSize: 18 + adjustmentFactor}]}>{i18n.t('hello_user')}</Text>
-        <View style={styles.iconsContainer}>
-          <TouchableOpacity style={[styles.iconButton, {backgroundColor: theme.primaryMain}]} onPress={() => {}}>
-            <FontAwesome name="cog" size={24} color="white" />
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.iconButton, {backgroundColor: theme.primaryMain}]}>
-            <FontAwesome name="bell" size={24} color="white" />
-          </TouchableOpacity>
-        </View>
-      </View>
-      {/* Upcoming Appointments */}
       <Text style={[styles.sectionHeader, {fontSize: 20 + adjustmentFactor}]}>{i18n.t('upcoming_appointments')}</Text>
       <View style={styles.card}>
+      {upcomingAppointments.length === 0 ? (
         <Text style={[styles.userInfoText, {fontSize: 16 + adjustmentFactor}]}>{i18n.t('no_upcoming_appointments')}</Text>
+      ) : (
+        <Text style={[styles.userInfoText, {fontSize: 16 + adjustmentFactor}]}>{i18n.t('yes_upcoming_appointments')}</Text>
+        )}
       </View>
 
-      {/* Featured Doctors */}
       <Text style={[styles.sectionHeader, {fontSize: 20 + adjustmentFactor}]}>{i18n.t('featured_doctors')}</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.featuredDoctorsContainer}>
         {featuredDoctors.map((doctor, index) => (
-          <TouchableOpacity key={index} style={styles.doctorCard} onPress={() => {}}>
+          <TouchableOpacity key={index} style={styles.doctorCard} onPress={() => handlefeaturedDoctor(doctor)}>
             <Image source={doctor.image} style={styles.doctorImage} />
             <Text style={[styles.doctorName, {fontSize: 16 + adjustmentFactor}]}>{doctor.name}</Text>
             <Text style={[styles.doctorSpecialty, {fontSize: 14 + adjustmentFactor}]}>{doctor.specialty}</Text>
@@ -157,7 +142,6 @@ const Home: React.FC<Props> = ({navigation}) => {
         ))}
       </ScrollView>
 
-      {/* Book Appointment Button */}
       <TouchableOpacity style={[styles.bookButton, {backgroundColor: theme.primaryMain}]} onPress={() => { navigation.navigate("DoctorCategory")}} onLongPress={handleLongPress("book an appointment with a doctor")}>
         <Text style={[styles.bookButtonText, {fontSize: 18 + adjustmentFactor}]}>{i18n.t('book_appointment')}</Text>
       </TouchableOpacity>

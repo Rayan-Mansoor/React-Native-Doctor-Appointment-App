@@ -6,12 +6,13 @@ import Appointment from './Appointment';
 import DoctorCategory from './DoctorCategory';
 import DoctorList from './DoctorList';
 import HomeScreen from './Home';
+import { Doctor } from '../storage/data/en_doctor_list';
 
 export type LandingStackParams = {
   Home: any;
-  Appointment: any;
+  Appointment: { doctor: Doctor };
   DoctorCategory: any;
-  DoctorList: any;
+  DoctorList: { category: string };
   About: any;
 };
 

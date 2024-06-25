@@ -4,7 +4,7 @@
 node_modules/
 
 # history
-.history/
+.history
 
 # Expo
 .expo/

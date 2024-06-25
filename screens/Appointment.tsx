@@ -1,28 +1,15 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, Modal } from 'react-native';
-import { FontAwesome } from '@expo/vector-icons';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, Image, ScrollView, Modal, Alert, Pressable } from 'react-native';
+import { FontAwesome, AntDesign } from '@expo/vector-icons';
 import { Calendar } from 'react-native-calendars';
-import TimePicker from '../components/TimePicker';
 import { useTheme } from '../context/ThemeProvider';
-import { useSelector } from 'react-redux';
-import { RootState } from '../storage/reduxStore';
-
-const doctor = {
-  name: 'Dr. John Doe',
-  specialty: 'Heart Surgeon',
-  location: 'London',
-  image: require('../assets/doctor1.jpg'),
-  rating: 4.5,
-  about: 'Dr. John Doe is an experienced heart surgeon with over 20 years of practice...',
-};
-
-const stats = [
-  { number: '20+', label: 'Years Experience' },
-  { number: '500+', label: 'Patients' },
-  { number: '4.5', label: 'Rating' },
-];
-
-const visitHours = ['10:00 AM', '11:00 AM', '1:00 PM', '3:00 PM', '4:00 PM', '5:00 PM', '6:00 PM', '7:00 PM'];
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState, addAppointment } from '../storage/reduxStore';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { LandingStackParams } from './LandingPage';
+import { DateObject, generateRandomDates, getDisabledDates } from '../utils/utilityFunctions';
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import i18n from '../localization/i18n';
 
 interface MarkedDates {
   [key: string]: {
@@ -33,104 +20,130 @@ interface MarkedDates {
   };
 }
 
-interface DateObject {
-  dateString: string;
-  day: number;
-  month: number;
-  year: number;
-  timestamp: number;
-}
+type Props = NativeStackScreenProps<LandingStackParams, 'Appointment'>
 
-
-const getDisabledDates = (startDate: string, endDate: string, enabledDates: MarkedDates): MarkedDates => {
-  const dates: MarkedDates = {};
-  const currentDate = new Date(startDate);
-
-  while (currentDate <= new Date(endDate)) {
-    const dateString = currentDate.toISOString().split('T')[0];
-    dates[dateString] = enabledDates[dateString] ? enabledDates[dateString] : { disabled: true };
-    currentDate.setDate(currentDate.getDate() + 1);
-  }
-
-  return dates;
-};
-
-const Appointment = () => {
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [selectedTime, setSelectedTime] = useState<string>('');
-
+const Appointment: React.FC<Props> = ({route}) => {
+  const language = useSelector((state: RootState) => state.language.locale);
   const adjustmentFactor = useSelector((state: RootState) => state.size.adjustmentFactor);
-  
-  const theme = useTheme();
-  
-  const initialMarkedDates: MarkedDates = {
-    '2023-06-01': { selected: true, marked: true, selectedColor: theme.available },
-    '2023-06-02': { selected: true, marked: true, selectedColor: theme.available },
-  };
-  
-  const [markedDates, setMarkedDates] = useState<MarkedDates>(getDisabledDates('2023-06-01', '2023-06-30', initialMarkedDates));
 
-  const handleDayPress = (day: DateObject) => {
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [selectedTime, setSelectedTime] = useState(new Date());
+  const [timeModalVisible, setTimeModalVisible] = useState(false);
+  const [completeDate, setCompleteDate] = useState('');
+  
+  const { doctor } = route.params
+  
+  useEffect(() => {
+    i18n.locale = language;
+  }, [language]);
+
+  const theme = useTheme();
+  const dispatch = useDispatch()
+
+  const currentDateString = new Date().toISOString().split('T')[0];
+  const twoMonthsLaterString = new Date(new Date().setMonth(new Date().getMonth() + 2)).toISOString().split('T')[0];
+  const initialMarkedDates = generateRandomDates(30);
+  const markedDatesWithDisabled = getDisabledDates(currentDateString, twoMonthsLaterString, initialMarkedDates);
+  
+  const [markedDates, setMarkedDates] = useState<MarkedDates>(markedDatesWithDisabled);
+
+  const confirmAppointment = () => {
+    const appointmentDateTime = constructDateTime(selectedDate!!,selectedTime)
+    dispatch(addAppointment({doctor, dateTime: appointmentDateTime.toISOString()}));
+    // setSelectedTime(time);
+    // You can also add any additional logic you want to handle when a time is selected
+  };
+
+  const constructDateTime = (dateString: string, time: Date): Date => {
+    const [year, month, day] = dateString.split('-').map(Number);
+  
+    const hours = time.getHours();
+    const minutes = time.getMinutes();
+    const seconds = time.getSeconds();
+  
+    return new Date(year, month - 1, day, hours, minutes, seconds);
+  }
+  
+
+  const handleDaySelect = (day: DateObject) => {
     const date = day.dateString;
+
     if (markedDates[date] && !markedDates[date].disabled) {
       setSelectedDate(date);
       setMarkedDates({
         ...markedDates,
-        [date]: { selected: true, marked: true, selectedColor: 'blue' },
+        [date]: { selected: true, marked: true, selectedColor: theme.primaryMain },
       });
-      setModalVisible(true);
+      setTimeModalVisible(true);
     }
   };
 
-  const handleTimeSelected = (time: string) => {
-    setSelectedTime(time);
-    // You can also add any additional logic you want to handle when a time is selected
+  const handleTimeSelected = (event: DateTimePickerEvent, selectedTime1: Date | undefined) => {
+    const currentTime = selectedTime1 || selectedTime;
+    setSelectedTime(currentTime);
+
+    if (event.type === 'set') {
+      const hours = currentTime.getHours();
+      const minutes = currentTime.getMinutes();
+
+      if (hours >= 8 && hours < 18) {
+        const timeString = `${hours}:${minutes < 10 ? '0' : ''}${minutes}`;
+        setTimeModalVisible(false)
+
+        setCompleteDate(timeString);
+      } else {
+        Alert.alert('Invalid Time', 'Please select a time between 8 AM and 6 PM.');
+        setTimeModalVisible(false)
+      }
+    }
+    else if (event.type === 'dismissed') {
+      setTimeModalVisible(false)
+    }
+    else if (event.type === 'neutralButtonPressed') {
+      setTimeModalVisible(false)
+    }
   };
 
   return (
     <ScrollView style={styles.container}>
-      {/* Header */}
-      <Text style={styles.header}>Appointment</Text>
-
-      {/* Doctor Info */}
       <Image source={doctor.image} style={styles.doctorImage} />
-      <Text style={styles.doctorName}>{doctor.name}</Text>
+      <Text style={[styles.doctorName, {fontSize: 22 + adjustmentFactor}]}>{doctor.name}</Text>
       <View style={styles.doctorSpecialty}>
-        <FontAwesome name="stethoscope" size={14} color="gray" />
-        <Text style={styles.specialtyText}>{doctor.specialty}</Text>
+        <FontAwesome name="stethoscope" size={14 + adjustmentFactor} color="gray" />
+        <Text style={[styles.specialtyText, {fontSize: 16 + adjustmentFactor}]}>{i18n.t(doctor.specialty.toLowerCase())}</Text>
       </View>
 
-      {/* Stats */}
-      <View style={styles.statsContainer}>
-        {stats.map((stat, index) => (
-          <View key={index} style={styles.statBlock}>
-            <Text style={styles.statNumber}>{stat.number}</Text>
-            <Text style={styles.statLabel}>{stat.label}</Text>
-          </View>
-        ))}
+      <View style={[styles.statsContainer, {backgroundColor: theme.primaryMain}]}>
+        <View style={styles.statBlock}>
+          <Text style={[styles.statNumber, {fontSize: 18 + adjustmentFactor}]}>{doctor.yearsExperience}+</Text>
+          <Text style={[styles.statLabel, {fontSize: 12 + adjustmentFactor}]}>{i18n.t("years_experience")}</Text>
+        </View>
+        <View style={styles.statBlock}>
+          <Text style={[styles.statNumber, {fontSize: 18 + adjustmentFactor}]}>{doctor.patients}+</Text>
+          <Text style={[styles.statLabel, {fontSize: 12 + adjustmentFactor}]}>{i18n.t("patients")}</Text>
+        </View>
+        <View style={styles.statBlock}>
+          <Text style={[styles.statNumber, {fontSize: 18 + adjustmentFactor}]}>{doctor.rating}</Text>
+          <Text style={[styles.statLabel, {fontSize: 12 + adjustmentFactor}]}>{i18n.t("rating")}</Text>
+        </View>
       </View>
 
-      {/* About Doctor */}
-      <Text style={styles.sectionHeader}>About Doctor</Text>
-      <Text style={styles.aboutText}>{doctor.about}</Text>
 
-      {/* Schedule */}
-      <Text style={styles.sectionHeader}>Schedule</Text>
+      <Text style={[styles.sectionHeader, {fontSize: 20 + adjustmentFactor}]}>{i18n.t("about_doctor")}</Text>
+      <Text style={[styles.aboutText, {fontSize: 16 + adjustmentFactor}]}>{doctor.about}</Text>
+
+      <Text style={[styles.sectionHeader, {fontSize: 20 + adjustmentFactor}]}>{i18n.t("schedule")}</Text>
       <View style={styles.calendarContainer}>
         <Calendar
-          current={'2023-06-01'}
-          minDate={'2023-05-10'}
-          maxDate={'2023-07-30'}
-          onDayPress={handleDayPress}
-          onDayLongPress={handleDayPress}
-          monthFormat={'yyyy MM'}
-          onMonthChange={(month) => {
-            console.log('month changed', month);
-          }}
+          current={new Date().toISOString().split('T')[0]}
+          minDate={new Date().toISOString().split('T')[0]}
+          maxDate={'2024-07-30'}
+          onDayPress={handleDaySelect}
+          onDayLongPress={handleDaySelect}
+          monthFormat={'MMMM yyyy'}
           hideArrows={false}
           renderArrow={(direction) => (
-            <Text>{direction === 'left' ? '<' : '>'}</Text>
+            <AntDesign name={direction === 'left' ? 'caretleft' : 'caretright'} size={18} color="black" />
           )}
           hideExtraDays={true}
           disableMonthChange={true}
@@ -139,45 +152,46 @@ const Appointment = () => {
             selectedDayBackgroundColor: '#7cfc00',
             selectedDayTextColor: '#ffffff',
             todayTextColor: 'red',
-            dayTextColor: '#2d4150',
+            dayTextColor: 'black',
             textDisabledColor: 'grey',
             arrowColor: 'orange',
-            monthTextColor: 'blue',
-            indicatorColor: 'blue',
+            monthTextColor: 'black',
+            indicatorColor: 'black',
             textDayFontFamily: 'monospace',
             textMonthFontFamily: 'monospace',
             textDayHeaderFontFamily: 'monospace',
             textDayFontWeight: '300',
             textMonthFontWeight: 'bold',
             textDayHeaderFontWeight: '300',
-            textDayFontSize: 16,
-            textMonthFontSize: 16,
-            textDayHeaderFontSize: 16
+            textDayFontSize: 16 + adjustmentFactor,
+            textMonthFontSize: 16 + adjustmentFactor,
+            textDayHeaderFontSize: 16 + adjustmentFactor
+            
           }}
         />
       </View>
 
-      {/* Book Appointment Button */}
-      <TouchableOpacity style={styles.bookButton}>
-        <Text style={styles.bookButtonText}>Confirm Appointment</Text>
-      </TouchableOpacity>
+      <Pressable onPress={confirmAppointment} disabled={!completeDate}>
+        {({ pressed }) => (
+          <View style={[styles.bookButton,{ opacity: !completeDate ? 0.5 : (pressed ? 0.5 : 1), backgroundColor: theme.primaryMain }]}>
+            <Text style={[styles.bookButtonText, {fontSize: 18 + adjustmentFactor}]}>{i18n.t("confirm_appointment")}</Text>
+          </View>
+        )}
+      </Pressable>
 
-      {/* Modal for Time Selection */}
       <Modal
         transparent={true}
         animationType="slide"
-        visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
+        visible={timeModalVisible}
+        onRequestClose={() => setTimeModalVisible(false)}
       >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalHeader}>Select Time for {selectedDate}</Text>
-            <TimePicker onTimeSelected={handleTimeSelected} />
-            <TouchableOpacity style={styles.modalCloseButton} onPress={() => setModalVisible(false)}>
-              <Text style={styles.modalCloseButtonText}>Close</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+      <DateTimePicker
+        value={selectedTime}
+        mode="time"
+        is24Hour={false}
+        display="clock"
+        onChange={handleTimeSelected}
+      />
       </Modal>
     </ScrollView>
   );
@@ -223,7 +237,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     marginVertical: 20,
-    backgroundColor: '#4facfe',
     padding: 20,
     borderRadius: 20,
   },
@@ -279,7 +292,6 @@ const styles = StyleSheet.create({
     height: 350,
   },
   bookButton: {
-    backgroundColor: '#4facfe',
     paddingVertical: 15,
     borderRadius: 10,
     alignItems: 'center',
@@ -303,40 +315,6 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 20,
     alignItems: 'center',
-  },
-  modalHeader: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 20,
-  },
-  modalTimeBlock: {
-    padding: 10,
-    marginVertical: 5,
-    backgroundColor: '#4facfe',
-    borderRadius: 10,
-    width: '100%',
-    alignItems: 'center',
-  },
-  modalTimeText: {
-    fontSize: 16,
-    color: 'white',
-  },
-  modalCloseButton: {
-    marginTop: 20,
-    padding: 10,
-    backgroundColor: 'red',
-    borderRadius: 10,
-    width: '100%',
-    alignItems: 'center',
-  },
-  modalCloseButtonText: {
-    fontSize: 16,
-    color: 'white',
-  },
-  selectedTime: {
-    marginTop: 20,
-    fontSize: 18,
-    fontWeight: 'bold',
   },
 });
 

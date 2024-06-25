@@ -1,8 +1,10 @@
 {
     "welcome": "ہیلتھ کیئر میں خوش آمدید",
     "hello_user": "ہیلو، صارف!",
+    "daily_tips": "صحت کا مشورہ",
     "upcoming_appointments": "آنے والے اپائنٹمنٹس",
     "no_upcoming_appointments": "کوئی آنے والے اپائنٹمنٹس نہیں",
+    "yes_upcoming_appointments": "آپ کے پاس آنے والی ملاقاتیں ہیں",
     "featured_doctors": "نمایاں ڈاکٹر",
     "book_appointment": "اپائنٹمنٹ بک کریں",
     "settings": "ترتیبات",
@@ -16,6 +18,23 @@
     "language": "زبان",
     "notifications": "نوٹیفیکیشنز",
     "save_settings": "ترتیبات محفوظ کریں",
-    "color_blindness": "رنگوں کی بیماری"
+    "color_blindness": "رنگوں کی بیماری",
+    "cardiology": "قلبیات",
+    "nephrology": "نیفرالوجی",
+    "neurology": "عصبیات",
+    "dermatology": "جلدیات",
+    "orthopedics": "ارتھوپیڈکس",
+    "gastroenterology": "معدہ و آنتھ",
+    "pulmonology": "پھیپھڑے",
+    "ophthalmology": "آنکھیں",
+    "select_category": "اپنے ڈاکٹر کیٹیگری منتخب کریں۔",
+    "select_doctor": "اپنے ڈاکٹر کا انتخاب کریں",
+    "about_doctor": "ڈاکٹر کے بارے میں",
+    "schedule": "شیڈول",
+    "schedule_appointment": "ملاقات کا وقت طے کریں",
+    "years_experience": "تجربہ کے سال",
+    "patients": "مریض",
+    "rating": "درجہ بندی",
+    "confirm_appointment": "ملاقات کی تصدیق کریں"
   }
   

@@ -1,52 +1,51 @@
-// DoctorCategorySelection.js
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image, ScrollView } from 'react-native';
+import React, { useEffect } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { Image } from 'expo-image';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { LandingStackParams } from './LandingPage';
+import doctorCategories from '../storage/data/en_doctor_category';
+import { useSelector } from 'react-redux';
+import { RootState } from '../storage/reduxStore';
+import { useTheme } from '../context/ThemeProvider';
+import i18n from '../localization/i18n';
 
-const doctorCategories = [
-  { id: 1, title: 'Cardiology', image: require('../assets/cardiologist.jpg') },
-  { id: 2, title: 'Dermatology', image: require('../assets/cardiologist.jpg') },
-  { id: 3, title: 'Neurology', image: require('../assets/cardiologist.jpg') },
-  { id: 4, title: 'Pediatrics', image: require('../assets/cardiologist.jpg') },
-  { id: 5, title: 'Radiology', image: require('../assets/cardiologist.jpg') },
-  { id: 6, title: 'Surgery', image: require('../assets/cardiologist.jpg') },
-  { id: 7, title: 'Radiology', image: require('../assets/cardiologist.jpg') },
-  { id: 8, title: 'Surgery', image: require('../assets/cardiologist.jpg') },
-  // Add more categories as needed
-];
+type Props = NativeStackScreenProps<LandingStackParams, 'DoctorCategory'>
 
-const DoctorCategory= () => {
-  const steps = ['Step 1', 'Step 2', 'Step 3', 'Step 4', 'Step 5'];
-  const currentStep = 2; // Assuming we're on Step 
+const DoctorCategory: React.FC<Props> = ({navigation}) => {
+  const language = useSelector((state: RootState) => state.language.locale);
+  const adjustmentFactor = useSelector((state: RootState) => state.size.adjustmentFactor);
+  const theme = useTheme()
+
+  const steps = ['Step 1', 'Step 2', 'Step 3'];
+  const currentStep = 1; 
+
+  useEffect(() => {
+    i18n.locale = language;
+  }, [language]);
   
-  const handleCardPress = (second: string) => { 
-    
-   }
+  const handleCardPress = (category: string) => { 
+    navigation.navigate('DoctorList', { category: category })
+  }
 
   return (
     <View style={styles.container}>
-      {/* Logo */}
-      {/* <Image source={require('../assets/.png')} style={styles.logo} /> */}
 
-      {/* Step Indicator */}
-      <View style={styles.stepIndicator}>
-        {steps.map((step, index) => (
-          <View key={index} style={[styles.dot, index + 1 === currentStep && styles.currentDot]} />
-        ))}
-        {/* <View style={styles.line} /> */}
-      </View>
+      <Text style={[styles.text, {fontSize: 22 + adjustmentFactor}]}>{i18n.t("select_category")}</Text>
 
-      {/* Prompt */}
-      <Text style={styles.text}>Select your doctor category</Text>
-
-      {/* Doctor Categories */}
       <ScrollView contentContainerStyle={styles.cardsContainer}>
         {doctorCategories.map(category => (
-          <TouchableOpacity key={category.id} style={styles.card} onPress={() => handleCardPress(category.title)}>
+          <TouchableOpacity key={category.title} style={styles.card} onPress={() => handleCardPress(category.title)}>
             <Image source={category.image} style={styles.cardImage} />
-            <Text style={styles.cardTitle}>{category.title}</Text>
+            <Text style={[styles.cardTitle, {fontSize: 16 + adjustmentFactor}]}>{i18n.t(category.title.toLowerCase())}</Text>
           </TouchableOpacity>
         ))}
       </ScrollView>
+
+      <View style={styles.stepIndicator}>
+        {steps.map((step, index) => (
+          <View key={index} style={[styles.dot, index + 1 === currentStep && {backgroundColor: theme.primaryMain}]} />
+        ))}
+      </View>
     </View>
   );
 };
@@ -57,7 +56,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 20,
-    paddingTop: 40, // To avoid overlap with the status bar
+    paddingTop: 20, // To avoid overlap with the status bar
   },
   logo: {
     width: 100,
@@ -72,10 +71,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent:'center',
-    position: 'absolute',
-    bottom: 20,
-    left: 20,
-    right: 20,
+    marginVertical: 15
   },
   dot: {
     width: 25,
@@ -85,7 +81,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 5,
   },
   currentDot: {
-    backgroundColor: 'blue', // Change to desired color for current step
+    backgroundColor: '#4facfe', // Change to desired color for current step
   },
   line: {
     flex: 1,
@@ -93,7 +89,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#ccc',
   },
   text: {
-    fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 20,
     marginTop: 120, // Space for the logo and step indicator

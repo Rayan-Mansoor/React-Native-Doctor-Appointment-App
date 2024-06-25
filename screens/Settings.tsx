@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Switch, Button, PermissionsAndroid, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Switch, Button, PermissionsAndroid, Platform, Pressable } from 'react-native';
 import Slider from '@react-native-community/slider';
 import i18n from '../localization/i18n';
 import RadioButton from '../components/RadioButton'
-import { RootState, setAdjustmentFactor, setLanguage, setTheme } from '../storage/reduxStore';
+import { RootState, setAdjustmentFactor, setEmail, setLanguage, setName, setPhone, setTheme } from '../storage/reduxStore';
 import { useDispatch, useSelector } from 'react-redux';
 import { useTheme } from '../context/ThemeProvider';
 import { useFocusEffect } from '@react-navigation/native';
@@ -19,14 +19,10 @@ const Settings: React.FC<Props> = ({navigation}) => {
   const language = useSelector((state: RootState) => state.language.locale);
   const currentTheme = useSelector((state: RootState) => state.theme.theme);
   const adjustmentFactor = useSelector((state: RootState) => state.size.adjustmentFactor);
+  const user = useSelector((state: RootState) => state.user);
 
   const theme = useTheme();
 
-  const [bioInfo, setBioInfo] = useState({
-    name: 'John Doe',
-    email: 'johndoe@example.com',
-    phone: '123-456-7890',
-  });
   const [fontSize, setFontSize] = useState(16);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [colorBlindnessEnabled, setColorBlindnessEnabled] = useState(false);
@@ -189,7 +185,19 @@ const Settings: React.FC<Props> = ({navigation}) => {
   };
 
   const handleBioChange = (key: string, value: string) => {
-    setBioInfo({ ...bioInfo, [key]: value });
+    switch (key) {
+      case 'name':
+        dispatch(setName(value));
+        break;
+      case 'email':
+        dispatch(setEmail(value));
+        break;
+      case 'phone':
+        dispatch(setPhone(value));
+        break;
+      default:
+        break;
+    }
   };
 
   const handleLanguageChange = async (newLanguage: string) => {
@@ -219,34 +227,35 @@ const Settings: React.FC<Props> = ({navigation}) => {
     <ScrollView style={styles.container}>
       <Text style={styles.header}>{i18n.t('settings')}</Text>
 
-      {/* User Bio Info */}
       <Text style={[styles.sectionHeader, {fontSize: 20 + adjustmentFactor}]}>{i18n.t('user_information')}</Text>
       <View style={styles.inputContainer}>
-        <Text style={styles.label}>{i18n.t('name')}</Text>
+        <Text style={[styles.label, {fontSize: 16 + adjustmentFactor}]}>{i18n.t('name')}</Text>
         <TextInput
-          style={styles.input}
-          value={bioInfo.name}
+          style={[styles.input, {fontSize: 12 + adjustmentFactor}]}
+          value={user.name}
+          placeholder='John Doe'
           onChangeText={(value) => handleBioChange('name', value)}
         />
       </View>
       <View style={styles.inputContainer}>
-        <Text style={styles.label}>{i18n.t('email')}</Text>
+        <Text style={[styles.label, {fontSize: 16 + adjustmentFactor}]}>{i18n.t('email')}</Text>
         <TextInput
-          style={styles.input}
-          value={bioInfo.email}
+          style={[styles.input, {fontSize: 12 + adjustmentFactor}]}
+          value={user.email}
+          placeholder='john@example.com'
           onChangeText={(value) => handleBioChange('email', value)}
         />
       </View>
       <View style={styles.inputContainer}>
-        <Text style={styles.label}>{i18n.t('phone')}</Text>
+        <Text style={[styles.label, {fontSize: 16 + adjustmentFactor}]}>{i18n.t('phone')}</Text>
         <TextInput
-          style={styles.input}
-          value={bioInfo.phone}
+          style={[styles.input, {fontSize: 12 + adjustmentFactor}]}
+          value={user.phone}
+          placeholder='+923348809086'
           onChangeText={(value) => handleBioChange('phone', value)}
         />
       </View>
 
-      {/* Font Size */}
       <Text style={[styles.sectionHeader, {fontSize: 20 + adjustmentFactor}]}>{i18n.t('font_size')}</Text>
       <View style={styles.sliderContainer}>
         <Slider
@@ -259,7 +268,6 @@ const Settings: React.FC<Props> = ({navigation}) => {
         />
       </View>
 
-      {/* Language */}
       <View>
         <Text style={[styles.sectionHeader, {fontSize: 20 + adjustmentFactor}]}>{i18n.t('language')}</Text>
         <View style={styles.inputContainer}>
@@ -280,7 +288,6 @@ const Settings: React.FC<Props> = ({navigation}) => {
         </View>
       </View>
 
-      {/* Notifications */}
       <View style={styles.switchContainer}>
         <Text style={[styles.sectionHeader, {fontSize: 20 + adjustmentFactor}]}>{i18n.t('notifications')}</Text>
         <Switch
@@ -291,7 +298,6 @@ const Settings: React.FC<Props> = ({navigation}) => {
         />
       </View>
 
-      {/* Color Blindness */}
       <View style={styles.switchContainer}>
         <Text style={[styles.sectionHeader, {fontSize: 20 + adjustmentFactor}]}>{i18n.t('color_blindness')}</Text>        
         <Switch
@@ -336,10 +342,14 @@ const Settings: React.FC<Props> = ({navigation}) => {
         </View>
       )}
 
-      {/* Save Button */}
-      <TouchableOpacity style={[styles.saveButton, {backgroundColor: theme.primaryMain}]}>
-        <Text style={styles.saveButtonText}>{i18n.t('save_settings')}</Text>
-      </TouchableOpacity>
+      <Pressable>
+        {({ pressed }) => (
+          <View style={{height: 40}}>
+            <Text>Confirm Appointment</Text>
+          </View>
+        )}
+      </Pressable>
+
     </ScrollView>
   );
 };

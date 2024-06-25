@@ -1,68 +1,72 @@
 // DoctorList.js
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image, ScrollView, TextInput, Alert } from 'react-native';
-import { FontAwesome } from '@expo/vector-icons'; // Ensure you have expo-vector-icons installed
+import React, { useEffect } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, TextInput, Alert } from 'react-native';
+import { Image } from 'expo-image';
+import { FontAwesome } from '@expo/vector-icons';
+import doctorsList, { Doctor } from '../storage/data/en_doctor_list';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { LandingStackParams } from './LandingPage';
+import { useSelector } from 'react-redux';
+import { RootState } from '../storage/reduxStore';
+import { useTheme } from '../context/ThemeProvider';
+import i18n from '../localization/i18n';
 
-const doctors = [
-  { id: 1, name: 'Dr. John Doe', specialty: 'Heart Surgeon', location: 'London', image: require('../assets/doctor1.jpg'), rating: 4.5 },
-  { id: 2, name: 'Dr. Jane Smith', specialty: 'Dermatologist', location: 'London', image: require('../assets/doctor2.jpeg'), rating: 4.0 },
-  { id: 3, name: 'Dr. Alex Johnson', specialty: 'Neurologist', location: 'London', image: require('../assets/doctor2.jpeg'), rating: 4.8 },
-  // Add more doctors as needed
-];
 
-const DoctorList = () => {
-  const steps = ['Step 1', 'Step 2', 'Step 3', 'Step 4', 'Step 5'];
-  const currentStep = 3; // Assuming we're on Step 3
+type Props = NativeStackScreenProps<LandingStackParams, 'DoctorList'>
 
-  const handleDoctorPress = (name : string) => {
-    Alert.alert(`You selected ${name}`);
+
+const DoctorList: React.FC<Props> = ({route, navigation}) => {
+  const language = useSelector((state: RootState) => state.language.locale);
+  const adjustmentFactor = useSelector((state: RootState) => state.size.adjustmentFactor);
+  const theme = useTheme()
+
+  const steps = ['Step 1', 'Step 2', 'Step 3'];
+  const currentStep = 2;
+
+  useEffect(() => {
+    i18n.locale = language;
+  }, [language]);
+
+  const { category } = route.params
+  const filteredDoctors = doctorsList.filter(doctor => doctor.specialty === category);
+
+  const handleDoctorSelect = (doc : Doctor) => {
+    navigation.navigate('Appointment', { doctor: doc })
   };
 
   return (
     <View style={styles.container}>
-      {/* Search Bar */}
       <TextInput
         style={styles.searchBar}
         placeholder="Search doctors..."
       />
 
-      {/* Prompt */}
-      <Text style={styles.text}>Pick your doctor</Text>
+      <Text style={[styles.text, {fontSize: 22 + adjustmentFactor}]}>{i18n.t('select_doctor')}</Text>
 
-      {/* Doctors List */}
       <ScrollView contentContainerStyle={styles.doctorsContainer}>
-        {doctors.map(doctor => (
-          <TouchableOpacity key={doctor.id} style={styles.doctorCard} onPress={() => handleDoctorPress(doctor.name)}>
+        {filteredDoctors.map(doctor => (
+          <View key={doctor.id} style={styles.doctorCard}>
             <Image source={doctor.image} style={styles.doctorImage} />
             <View style={styles.doctorInfo}>
-              <Text style={styles.doctorName}>{doctor.name}</Text>
-              <Text style={styles.doctorSpecialty}>{doctor.specialty}, {doctor.location}</Text>
+              <Text style={[styles.doctorName, {fontSize: 18 + adjustmentFactor}]}>{doctor.name}</Text>
+              <Text style={[styles.doctorSpecialty, {fontSize: 14 + adjustmentFactor}]}>{doctor.specialty}, {doctor.location}</Text>
               <View style={styles.rating}>
-                <FontAwesome name="star" size={14} color="gold" />
-                <Text style={styles.ratingText}>{doctor.rating}</Text>
+                <FontAwesome name="star" size={14 + adjustmentFactor} color={theme.rating}/>
+                <Text style={[styles.ratingText, {fontSize: 14 + adjustmentFactor}]}>{doctor.rating}</Text>
               </View>
-              <TouchableOpacity style={styles.appointmentButton}>
-                <Text style={styles.appointmentButtonText}>Book Appointment</Text>
+              <TouchableOpacity style={[styles.appointmentButton, {backgroundColor: theme.primaryMain}]} onPress={() => handleDoctorSelect(doctor)}>
+                <Text style={[styles.appointmentButtonText, {fontSize: 14 + adjustmentFactor}]}>{i18n.t('schedule_appointment')}</Text>
               </TouchableOpacity>
-              <View style={styles.iconButtons}>
-                <TouchableOpacity style={styles.iconButton}>
-                  <FontAwesome name="comment" size={20} color="gray" />
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.iconButton}>
-                  <FontAwesome name="heart" size={20} color="gray" />
-                </TouchableOpacity>
-              </View>
+
             </View>
-          </TouchableOpacity>
+          </View>
         ))}
       </ScrollView>
 
-      {/* Step Indicator */}
       <View style={styles.stepIndicator}>
         {steps.map((step, index) => (
-          <View key={index} style={[styles.dot, index + 1 === currentStep && styles.currentDot]} />
+          <View key={index} style={[styles.dot, index + 1 === currentStep && {backgroundColor: theme.primaryMain}]} />
         ))}
-        {/* <View style={styles.line} /> */}
       </View>
     </View>
   );
@@ -95,7 +99,7 @@ const styles = StyleSheet.create({
   },
   doctorCard: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(255, 255, 255, 0.9)', // Slightly transparent white
+    backgroundColor: 'white', // Slightly transparent white
     borderRadius: 10,
     padding: 15,
     marginBottom: 20,
@@ -140,6 +144,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: 'center',
     marginTop: 10,
+    padding: 8
   },
   appointmentButtonText: {
     color: 'white',
@@ -158,10 +163,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent:'center',
-    position: 'absolute',
-    bottom: 20,
-    left: 20,
-    right: 20,
+    marginVertical: 15
   },
   dot: {
     width: 25,
@@ -171,7 +173,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 5,
   },
   currentDot: {
-    backgroundColor: 'blue', // Change to desired color for current step
+    backgroundColor: '#4facfe', // Change to desired color for current step
   },
   line: {
     flex: 1,
