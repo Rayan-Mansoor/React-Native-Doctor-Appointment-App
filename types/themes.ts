@@ -13,8 +13,8 @@ export interface ColorTheme {
 }
 
 export const NormalTheme: ColorTheme = {
-  background: '#f0f0f0',
-  card: '#ffffff',
+  background: '#ffffff',
+  card: '#f0f0f0',
   primaryText: '#000000',
   secondaryText: '#808080',
   primaryMain: '#4facfe',

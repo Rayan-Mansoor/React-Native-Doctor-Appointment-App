@@ -39,6 +39,7 @@
     "invalid_time": "Invalid Time",
     "please_select_time": "Please select a time between 8 AM and 6 PM.",
     "appointment_confirmed": "Appointment Confirmed",
-    "appointment_scheduled_at": "Your Appointment has been scheduled at"
+    "appointment_scheduled_at": "Your Appointment has been scheduled at",
+    "search_doctor": "Search doctors"
   }
   

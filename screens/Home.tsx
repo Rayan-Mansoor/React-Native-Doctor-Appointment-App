@@ -15,6 +15,8 @@ import { LandingStackParams } from './LandingPage';
 import { useTooltip } from '../context/TooltipProvider';
 import doctorsListEN, { Doctor } from '../storage/data/en_doctor_list';
 import doctorsListUR from '../storage/data/ur_doctor_list';
+import { rootNavigation } from '../components/RootNavigation';
+
 
 type Props = NativeStackScreenProps<LandingStackParams, 'Home'>
 
@@ -64,19 +66,27 @@ const Home: React.FC<Props> = ({navigation}) => {
 
     command = command.toLowerCase();
 
-    if (command.includes('settings')) {
-      // navigation.navigate('Settings');
-    } else if (command.includes('appointments')) {
-      // navigation.navigate('Appointment');
-    } else if (command.includes('about')) {
-      navigation.navigate('About');
+    if (command.includes('setting' || 'settings')) {
+      rootNavigation('Settings');
+    } else if (command.includes('upcoming appointments' || 'my appointments')) {
+      rootNavigation('MyAppointments');
     } else if (command.includes('book appointment')) {
-      // navigation.navigate('Appointment');
-    } else if (command.includes('featured doctors')) {
+      navigation.navigate('DoctorCategory');
+    } else if (command.includes('featured doctors' || 'best doctors')) {
       // Scroll to featured doctors section
       // Assuming you have a ref to the ScrollView and can scroll to a specific position
     } else {
-      console.log('Command not recognized.');
+      // Normalize doctor names and check for a match
+      const matchedDoctor = featuredDoctors.find(doctor => {
+        const doctorNameNormalized = doctor.name.toLowerCase().replace('dr. ', '');
+        return command.includes(doctorNameNormalized);
+      });
+
+      if (matchedDoctor) {
+        handlefeaturedDoctor(matchedDoctor);
+      } else {
+        console.log('Command not recognized.');
+      }
     }
   };
 
@@ -105,11 +115,11 @@ const Home: React.FC<Props> = ({navigation}) => {
   };
 
   return (
-    <ScrollView style={styles.container}>
-      <Text style={[styles.header, {fontSize: 24 + adjustmentFactor}]}>{i18n.t('welcome')}</Text>
+    <ScrollView style={[styles.container, {backgroundColor: theme.background}]}>
+      <Text style={[styles.header, {fontSize: 30 + adjustmentFactor, color: theme.primaryMain}]}>{i18n.t('welcome')}</Text>
 
       <Text style={[styles.sectionHeader, {fontSize: 20 + adjustmentFactor}]}>{i18n.t('daily_tips')}</Text>
-      <View style={styles.card}>
+      <View style={[styles.card, {backgroundColor: theme.card}]}>
       <TypeWriterEffect
           text={healthTip}
           style={[styles.userInfoText, {fontSize: 16 + adjustmentFactor}]}
@@ -120,7 +130,7 @@ const Home: React.FC<Props> = ({navigation}) => {
       </View>
 
       <Text style={[styles.sectionHeader, {fontSize: 20 + adjustmentFactor}]}>{i18n.t('upcoming_appointments')}</Text>
-      <View style={styles.card}>
+      <View style={[styles.card, {backgroundColor: theme.card}]}>
       {upcomingAppointments.length === 0 ? (
         <Text style={[styles.userInfoText, {fontSize: 16 + adjustmentFactor}]}>{i18n.t('no_upcoming_appointments')}</Text>
       ) : (
@@ -131,7 +141,7 @@ const Home: React.FC<Props> = ({navigation}) => {
       <Text style={[styles.sectionHeader, {fontSize: 20 + adjustmentFactor}]}>{i18n.t('featured_doctors')}</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.featuredDoctorsContainer}>
         {featuredDoctors.map((doctor, index) => (
-          <TouchableOpacity key={index} style={styles.doctorCard} onPress={() => handlefeaturedDoctor(doctor)}>
+          <TouchableOpacity key={index} style={[styles.doctorCard, {backgroundColor: theme.card}]} onPress={() => handlefeaturedDoctor(doctor)}>
             <Image source={doctor.image} style={styles.doctorImage} />
             <Text style={[styles.doctorName, {fontSize: 16 + adjustmentFactor}]}>{doctor.name}</Text>
             <Text style={[styles.doctorSpecialty, {fontSize: 14 + adjustmentFactor}]}>{i18n.t(doctor.specialty.toLowerCase())}</Text>
@@ -155,12 +165,14 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 20,
     paddingTop: 40,
-    backgroundColor: '#f0f0f0',
   },
   header: {
     fontWeight: 'bold',
     marginBottom: 20,
     textAlign: 'center',
+    elevation: 5,
+    shadowColor: "grey",
+    shadowOffset: { width: 1, height: 1 }
   },
   userInfoContainer: {
     flexDirection: 'row',
@@ -177,10 +189,11 @@ const styles = StyleSheet.create({
     marginVertical: 10,
   },
   card: {
-    backgroundColor: 'white',
     padding: 20,
     borderRadius: 10,
     marginBottom: 20,
+    margin:5,
+    elevation: 3,
     alignItems: 'center',
   },
   iconContainer: {
@@ -195,11 +208,12 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   doctorCard: {
-    backgroundColor: 'white',
     borderRadius: 10,
     padding: 10,
     marginRight: 10,
     width: 150,
+    elevation: 5,
+    margin: 10,
     alignItems: 'center',
   },
   doctorImage: {
@@ -229,6 +243,8 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     borderRadius: 10,
     alignItems: 'center',
+    margin:5,
+    elevation: 5,
     marginBottom: 60,
   },
   bookButtonText: {

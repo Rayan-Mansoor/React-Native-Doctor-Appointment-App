@@ -1,5 +1,5 @@
 // DoctorList.js
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, TextInput, Alert } from 'react-native';
 import { Image } from 'expo-image';
 import { FontAwesome } from '@expo/vector-icons';
@@ -11,6 +11,9 @@ import { useSelector } from 'react-redux';
 import { RootState } from '../storage/reduxStore';
 import { useTheme } from '../context/ThemeProvider';
 import i18n from '../localization/i18n';
+import { rootNavigation } from '../components/RootNavigation';
+import { useFocusEffect } from '@react-navigation/native';
+import { useMicrophone } from '../context/MicrophoneProvider';
 
 
 type Props = NativeStackScreenProps<LandingStackParams, 'DoctorList'>
@@ -20,13 +23,57 @@ const DoctorList: React.FC<Props> = ({route, navigation}) => {
   const language = useSelector((state: RootState) => state.language.locale);
   const adjustmentFactor = useSelector((state: RootState) => state.size.adjustmentFactor);
   const theme = useTheme()
+  const { microphoneResult } = useMicrophone();
+  const microphoneResultRef = useRef<string | null>(null);
 
   const steps = ['Step 1', 'Step 2', 'Step 3'];
   const currentStep = 2;
 
+  useFocusEffect(
+    React.useCallback(() => {
+      microphoneResultRef.current = microphoneResult;
+
+      return () => {
+        microphoneResultRef.current = null;
+      };
+    }, [microphoneResult])
+  );
+
   useEffect(() => {
     i18n.locale = language;
   }, [language]);
+
+  useEffect(() => {
+    if (microphoneResultRef.current) {
+      handleVoiceCommand(microphoneResultRef.current);
+      console.log('Microphone Result:', microphoneResultRef.current);
+    }
+  }, [microphoneResult]);
+
+  const handleVoiceCommand = (command: string | null) => {
+    if (!command) return;
+
+    command = command.toLowerCase();
+
+    if (command.includes('home || main page')) {
+      rootNavigation('Home');
+    } else if (command.includes('setting' || 'settings')) {
+      rootNavigation('Settings');
+    } else if (command.includes('upcoming appointments' || 'my appointments')) {
+      rootNavigation('MyAppointments');
+    } else {
+        const matchedDoctor = filteredDoctors.find(doctor => {
+        const doctorNameNormalized = doctor.name.toLowerCase().replace('dr. ', '');
+        return command.includes(doctorNameNormalized);
+      });
+  
+      if (matchedDoctor) {
+        handleDoctorSelect(matchedDoctor);
+      } else {
+        console.log('Command not recognized.');
+      }
+    }
+  };
 
   const { category } = route.params
   const filteredDoctors = language == 'en'? doctorsListEN.filter(doctor => doctor.specialty === category) : doctorsListUR.filter(doctor => doctor.specialty === category)
@@ -36,17 +83,16 @@ const DoctorList: React.FC<Props> = ({route, navigation}) => {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, {backgroundColor: theme.background}]}>
       <TextInput
-        style={styles.searchBar}
-        placeholder="Search doctors..."
+        style={[styles.searchBar, {fontSize: 12 + adjustmentFactor, backgroundColor: theme.card}]}
+        placeholder={`${i18n.t("search_doctor")}...`}
       />
-
       <Text style={[styles.text, {fontSize: 22 + adjustmentFactor}]}>{i18n.t('select_doctor')}</Text>
 
       <ScrollView contentContainerStyle={styles.doctorsContainer}>
         {filteredDoctors.map(doctor => (
-          <View key={doctor.id} style={styles.doctorCard}>
+          <View key={doctor.id} style={[styles.doctorCard, {backgroundColor: theme.card}]}>
             <Image source={doctor.image} style={styles.doctorImage} />
             <View style={styles.doctorInfo}>
               <Text style={[styles.doctorName, {fontSize: 18 + adjustmentFactor}]}>{doctor.name}</Text>
@@ -140,9 +186,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   appointmentButton: {
-    backgroundColor: '#4facfe',
     paddingVertical: 10,
     borderRadius: 10,
+    elevation: 3,
     alignItems: 'center',
     marginTop: 10,
     padding: 8

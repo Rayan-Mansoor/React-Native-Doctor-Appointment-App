@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { Image } from 'expo-image';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -8,6 +8,9 @@ import { useSelector } from 'react-redux';
 import { RootState } from '../storage/reduxStore';
 import { useTheme } from '../context/ThemeProvider';
 import i18n from '../localization/i18n';
+import { rootNavigation } from '../components/RootNavigation';
+import { useMicrophone } from '../context/MicrophoneProvider';
+import { useFocusEffect } from '@react-navigation/native';
 
 type Props = NativeStackScreenProps<LandingStackParams, 'DoctorCategory'>
 
@@ -15,26 +18,79 @@ const DoctorCategory: React.FC<Props> = ({navigation}) => {
   const language = useSelector((state: RootState) => state.language.locale);
   const adjustmentFactor = useSelector((state: RootState) => state.size.adjustmentFactor);
   const theme = useTheme()
+  const { microphoneResult } = useMicrophone();
+  const microphoneResultRef = useRef<string | null>(null);
 
   const steps = ['Step 1', 'Step 2', 'Step 3'];
   const currentStep = 1; 
 
+  useFocusEffect(
+    React.useCallback(() => {
+      microphoneResultRef.current = microphoneResult;
+
+      return () => {
+        microphoneResultRef.current = null;
+      };
+    }, [microphoneResult])
+  );
+
   useEffect(() => {
     i18n.locale = language;
   }, [language]);
+
+  useEffect(() => {
+    if (microphoneResultRef.current) {
+      handleVoiceCommand(microphoneResultRef.current);
+      console.log('Microphone Result:', microphoneResultRef.current);
+    }
+  }, [microphoneResult]);
+
+  const handleVoiceCommand = (command: string | null) => {
+    if (!command) return;
+
+    command = command.toLowerCase();
+
+    if (command.includes('home || main page')) {
+      rootNavigation('Home');
+    } else if (command.includes('setting' || 'settings')) {
+      rootNavigation('Settings');
+    } else if (command.includes('upcoming appointments' || 'my appointments')) {
+      rootNavigation('MyAppointments');
+    } else if (command.includes('book appointment')) {
+      navigation.navigate('DoctorCategory');
+    } else if (command.includes('cardiology')) {
+      handleCardPress('Cardiology')
+    } else if (command.includes('nephrology')) {
+      handleCardPress('Nephrology')
+    } else if (command.includes('neurology')) {
+      handleCardPress('Neurology')
+    } else if (command.includes('dermatology')) {
+      handleCardPress('Dermatology')
+    } else if (command.includes('orthopedics')) {
+      handleCardPress('Orthopedics')
+    } else if (command.includes('gastroenterology')) {
+      handleCardPress('Gastroenterology')
+    } else if (command.includes('pulmonology')) {
+      handleCardPress('Pulmonology')
+    } else if (command.includes('ophthalmology')) {
+      handleCardPress('Ophthalmology')
+    } else {
+      console.log('Command not recognized.');
+    }
+  };
   
   const handleCardPress = (category: string) => { 
     navigation.navigate('DoctorList', { category: category })
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, {backgroundColor: theme.background}]}>
 
       <Text style={[styles.text, {fontSize: 22 + adjustmentFactor}]}>{i18n.t("select_category")}</Text>
 
       <ScrollView contentContainerStyle={styles.cardsContainer}>
         {doctorCategories.map(category => (
-          <TouchableOpacity key={category.title} style={styles.card} onPress={() => handleCardPress(category.title)}>
+          <TouchableOpacity key={category.title} style={[styles.card, {backgroundColor: theme.card}]} onPress={() => handleCardPress(category.title)}>
             <Image source={category.image} style={styles.cardImage} />
             <Text style={[styles.cardTitle, {fontSize: 16 + adjustmentFactor}]}>{i18n.t(category.title.toLowerCase())}</Text>
           </TouchableOpacity>

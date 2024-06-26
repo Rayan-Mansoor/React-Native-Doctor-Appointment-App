@@ -12,6 +12,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import * as Notifications from 'expo-notifications';
 import {storage as mmkvStorage} from '../storage/mmkvStorage'
 import { RootTabParams } from '../App';
+import { rootNavigation } from '../components/RootNavigation';
 
 type Props = NativeStackScreenProps<RootTabParams, 'Settings'>
 
@@ -63,7 +64,11 @@ const Settings: React.FC<Props> = ({navigation}) => {
     command = command.toLowerCase();
     console.log('Voice Command:', command);
   
-    if (command.includes("change name to")) {
+    if (command.includes('home || main page')) {
+      rootNavigation('Home');
+    } else if (command.includes('upcoming appointments' || 'my appointments')) {
+      rootNavigation('MyAppointments');
+    } else if (command.includes("change name to")) {
       const newName = command.split("change name to ")[1];
       handleBioChange('name', newName);
     } else if (command.includes("update email to")) {
@@ -222,14 +227,14 @@ const Settings: React.FC<Props> = ({navigation}) => {
   };
 
   return (
-    <ScrollView style={styles.container}>
-      <Text style={styles.header}>{i18n.t('settings')}</Text>
+    <ScrollView style={[styles.container, {backgroundColor: theme.background}]}>
+      <Text style={[styles.header, { fontSize: 30 + adjustmentFactor, color: theme.primaryMain }]}>{i18n.t('settings')}</Text>
 
       <Text style={[styles.sectionHeader, {fontSize: 20 + adjustmentFactor}]}>{i18n.t('user_information')}</Text>
       <View style={styles.inputContainer}>
         <Text style={[styles.label, {fontSize: 16 + adjustmentFactor}]}>{i18n.t('name')}</Text>
         <TextInput
-          style={[styles.input, {fontSize: 12 + adjustmentFactor}]}
+          style={[styles.input, {fontSize: 12 + adjustmentFactor, backgroundColor: theme.card}]}
           value={user.name}
           placeholder='John Doe'
           onChangeText={(value) => handleBioChange('name', value)}
@@ -238,7 +243,7 @@ const Settings: React.FC<Props> = ({navigation}) => {
       <View style={styles.inputContainer}>
         <Text style={[styles.label, {fontSize: 16 + adjustmentFactor}]}>{i18n.t('email')}</Text>
         <TextInput
-          style={[styles.input, {fontSize: 12 + adjustmentFactor}]}
+          style={[styles.input, {fontSize: 12 + adjustmentFactor, backgroundColor: theme.card}]}
           value={user.email}
           placeholder='john@example.com'
           onChangeText={(value) => handleBioChange('email', value)}
@@ -247,7 +252,7 @@ const Settings: React.FC<Props> = ({navigation}) => {
       <View style={styles.inputContainer}>
         <Text style={[styles.label, {fontSize: 16 + adjustmentFactor}]}>{i18n.t('phone')}</Text>
         <TextInput
-          style={[styles.input, {fontSize: 12 + adjustmentFactor}]}
+          style={[styles.input, {fontSize: 12 + adjustmentFactor, backgroundColor: theme.card}]}
           value={user.phone}
           placeholder='+923348809086'
           onChangeText={(value) => handleBioChange('phone', value)}
@@ -357,7 +362,6 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 20,
     paddingTop: 40,
-    backgroundColor: '#f0f0f0',
   },
   header: {
     fontSize: 24,

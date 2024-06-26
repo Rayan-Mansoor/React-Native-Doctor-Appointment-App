@@ -24,6 +24,7 @@ import { FontAwesome5 } from '@expo/vector-icons';
 import { Ionicons } from '@expo/vector-icons';
 import { TooltipProvider } from './context/TooltipProvider';
 import RecordingToast from './components/RecordingToast';
+import { navigationRef } from './components/RootNavigation';
 
 const HEALTH_TIP_NOTIFICATION_TASK = 'health-tip-notification';
 
@@ -86,7 +87,7 @@ function MainApp() {
 
   return (
     <View style={{flex: 1}}>
-      <NavigationContainer theme={DefaultTheme}>
+      <NavigationContainer ref={navigationRef} theme={DefaultTheme}>
         <StatusBar style="auto" backgroundColor={theme.primaryMain}/>
         <Tab.Navigator screenOptions={{ headerShown: false , tabBarShowLabel: false}}>
           <Tab.Screen name="LandingPage" component={LandingPage} options={{ tabBarIcon: ({ focused, size }) => <Entypo name="home" size={size} color={focused ? theme.primaryMain : theme.secondaryText}/>  }}/>

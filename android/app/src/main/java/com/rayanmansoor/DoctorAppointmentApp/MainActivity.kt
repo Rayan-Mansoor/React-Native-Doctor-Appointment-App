@@ -3,31 +3,29 @@ package com.rayanmansoor.DoctorAppointmentApp
 import android.os.Build
 import android.os.Bundle
 import android.view.KeyEvent
-import android.util.Log
 
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate
 import com.facebook.react.defaults.DefaultNewArchitectureEntryPoint.fabricEnabled
 import com.facebook.react.defaults.DefaultReactActivityDelegate
-
 import com.github.kevinejohn.keyevent.KeyEventModule
 
 import expo.modules.ReactActivityDelegateWrapper
 
+
 class MainActivity : ReactActivity() {
 
-    override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
-      Log.d("MainActivity", "onKeyDown: keyCode=$keyCode")
-        if (keyCode == KeyEvent.KEYCODE_VOLUME_UP) {
-            KeyEventModule.getInstance().onKeyUpEvent(keyCode, event)
-            return true // Consume the event to prevent default behavior
-        }
-        else if (keyCode == KeyEvent.KEYCODE_VOLUME_DOWN) {
-            KeyEventModule.getInstance().onKeyDownEvent(keyCode, event)
-            return true // Consume the event to prevent default behavior
-        }
-        return super.onKeyDown(keyCode, event)
-    }
+  override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
+      if (keyCode == KeyEvent.KEYCODE_VOLUME_UP) {
+          KeyEventModule.getInstance().onKeyUpEvent(keyCode, event)
+          return true // Consume the event to prevent default behavior
+      }
+      else if (keyCode == KeyEvent.KEYCODE_VOLUME_DOWN) {
+          KeyEventModule.getInstance().onKeyDownEvent(keyCode, event)
+          return true // Consume the event to prevent default behavior
+      }
+      return super.onKeyDown(keyCode, event)
+  }
 
   override fun onCreate(savedInstanceState: Bundle?) {
     // Set the theme to AppTheme BEFORE onCreate to support

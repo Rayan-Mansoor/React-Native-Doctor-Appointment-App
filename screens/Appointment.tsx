@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Image, ScrollView, Modal, Alert, Pressable } from 'react-native';
 import { FontAwesome, AntDesign } from '@expo/vector-icons';
 import { Calendar } from 'react-native-calendars';
@@ -10,6 +10,11 @@ import { LandingStackParams } from './LandingPage';
 import { DateObject, formatDate, generateRandomDates, getDisabledDates } from '../utils/utilityFunctions';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import i18n from '../localization/i18n';
+import { useMicrophone } from '../context/MicrophoneProvider';
+import { rootNavigation } from '../components/RootNavigation';
+import { useFocusEffect } from '@react-navigation/native';
+import { parse, format } from 'date-fns';
+
 
 interface MarkedDates {
   [key: string]: {
@@ -31,11 +36,83 @@ const Appointment: React.FC<Props> = ({route}) => {
   const [timeModalVisible, setTimeModalVisible] = useState(false);
   const [completeDate, setCompleteDate] = useState('');
   
+  const { microphoneResult } = useMicrophone();
+  const microphoneResultRef = useRef<string | null>(null);
+  
   const { doctor } = route.params
   
+  useFocusEffect(
+    React.useCallback(() => {
+      microphoneResultRef.current = microphoneResult;
+
+      return () => {
+        microphoneResultRef.current = null;
+      };
+    }, [microphoneResult])
+  );
+
   useEffect(() => {
     i18n.locale = language;
   }, [language]);
+
+  useEffect(() => {
+    if (microphoneResultRef.current) {
+      handleVoiceCommand(microphoneResultRef.current);
+      console.log('Microphone Result:', microphoneResultRef.current);
+    }
+  }, [microphoneResult]);
+
+  const handleVoiceCommand = (command: string | null) => {
+    if (!command) return;
+
+    command = command.toLowerCase();
+
+    if (command.includes('home || main page')) {
+      rootNavigation('Home');
+    } else if (command.includes('setting' || 'settings')) {
+      rootNavigation('Settings');
+    } else if (command.includes('upcoming appointments' || 'my appointments')) {
+      rootNavigation('MyAppointments');
+      // all the tasks the user can perform on this page should have a corresponding voice command
+    // } else if (command.includes('select date')) {
+    //   const datePattern = /\d{4}-\d{2}-\d{2}/;
+    //   let match = command.match(datePattern);
+  
+    //   if (!match) {
+    //     try {
+    //       const parsedDate = parse(command.replace('select date', '').trim(), 'MMMM d yyyy', new Date());
+    //       const formattedDate = format(parsedDate, 'yyyy-MM-dd');
+    //       match = [formattedDate];
+    //     } catch (error) {
+    //       console.log('Error parsing date:', error);
+    //     }
+    //   }
+  
+    //   if (match) {
+    //     handleDaySelect({ dateString: match[0], day: 0, month: 0, year: 0, timestamp: 0 });
+    //   } else {
+    //     console.log('Date not recognized in the command.');
+    //   }
+    // } else if (command.includes('select time')) {
+    //   const timePattern = /(\d{1,2}):(\d{2})\s*(am|pm)/;
+    //   const match = command.match(timePattern);
+    //   if (match) {
+    //     const hours = parseInt(match[1], 10);
+    //     const minutes = parseInt(match[2], 10);
+    //     const period = match[3].toLowerCase();
+    //     const adjustedHours = period === 'pm' && hours < 12 ? hours + 12 : hours === 12 && period === 'am' ? 0 : hours;
+    //     const time = new Date();
+    //     time.setHours(adjustedHours);
+    //     time.setMinutes(minutes);
+    //     handleTimeSelected({ type: 'set', nativeEvent: {
+    //       timestamp: 0,
+    //       utcOffset: 0
+    //     } }, time);
+    //   }
+    // } else {
+      console.log('Command not recognized.');
+    }
+  };
 
   const theme = useTheme();
   const dispatch = useDispatch()
@@ -106,36 +183,37 @@ const Appointment: React.FC<Props> = ({route}) => {
   };
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView style={[styles.container, {backgroundColor: theme.background}]}>
       <Image source={doctor.image} style={styles.doctorImage} />
       <Text style={[styles.doctorName, {fontSize: 22 + adjustmentFactor}]}>{doctor.name}</Text>
       <View style={styles.doctorSpecialty}>
         <FontAwesome name="stethoscope" size={14 + adjustmentFactor} color="gray" />
-        <Text style={[styles.specialtyText, {fontSize: 16 + adjustmentFactor}]}>{i18n.t(doctor.specialty.toLowerCase())}</Text>
+        <Text style={[styles.specialtyText, {fontSize: 16 + adjustmentFactor, color: theme.secondaryText}]}>{i18n.t(doctor.specialty.toLowerCase())}</Text>
       </View>
 
       <View style={[styles.statsContainer, {backgroundColor: theme.primaryMain}]}>
-        <View style={styles.statBlock}>
+        <View style={[styles.statBlock, {backgroundColor: theme.card}]}>
           <Text style={[styles.statNumber, {fontSize: 18 + adjustmentFactor}]}>{doctor.yearsExperience}+</Text>
-          <Text style={[styles.statLabel, {fontSize: 12 + adjustmentFactor}]}>{i18n.t("years_experience")}</Text>
+          <Text style={{fontSize: 12 + adjustmentFactor, color: theme.secondaryText}}>{i18n.t("years_experience")}</Text>
         </View>
-        <View style={styles.statBlock}>
+        <View style={[styles.statBlock, {backgroundColor: theme.card}]}>
           <Text style={[styles.statNumber, {fontSize: 18 + adjustmentFactor}]}>{doctor.patients}+</Text>
-          <Text style={[styles.statLabel, {fontSize: 12 + adjustmentFactor}]}>{i18n.t("patients")}</Text>
+          <Text style={{fontSize: 12 + adjustmentFactor, color: theme.secondaryText}}>{i18n.t("patients")}</Text>
         </View>
-        <View style={styles.statBlock}>
+        <View style={[styles.statBlock, {backgroundColor: theme.card}]}>
           <Text style={[styles.statNumber, {fontSize: 18 + adjustmentFactor}]}>{doctor.rating}</Text>
-          <Text style={[styles.statLabel, {fontSize: 12 + adjustmentFactor}]}>{i18n.t("rating")}</Text>
+          <Text style={{fontSize: 12 + adjustmentFactor, color: theme.secondaryText}}>{i18n.t("rating")}</Text>
         </View>
       </View>
 
 
       <Text style={[styles.sectionHeader, {fontSize: 20 + adjustmentFactor}]}>{i18n.t("about_doctor")}</Text>
-      <Text style={[styles.aboutText, {fontSize: 16 + adjustmentFactor}]}>{doctor.about}</Text>
+      <Text style={[styles.aboutText, {fontSize: 16 + adjustmentFactor, color: theme.secondaryText}]}>{doctor.about}</Text>
 
       <Text style={[styles.sectionHeader, {fontSize: 20 + adjustmentFactor}]}>{i18n.t("schedule")}</Text>
       <View style={styles.calendarContainer}>
         <Calendar
+          style={{backgroundColor: theme.card}}
           current={new Date().toISOString().split('T')[0]}
           minDate={new Date().toISOString().split('T')[0]}
           maxDate={'2024-07-30'}
@@ -150,6 +228,7 @@ const Appointment: React.FC<Props> = ({route}) => {
           disableMonthChange={true}
           markedDates={markedDates}
           theme={{
+            calendarBackground: theme.card,
             selectedDayBackgroundColor: '#7cfc00',
             selectedDayTextColor: '#ffffff',
             todayTextColor: 'red',
@@ -175,7 +254,7 @@ const Appointment: React.FC<Props> = ({route}) => {
       <Pressable onPress={confirmAppointment} disabled={!completeDate}>
         {({ pressed }) => (
           <View style={[styles.bookButton,{ opacity: !completeDate ? 0.5 : (pressed ? 0.5 : 1), backgroundColor: theme.primaryMain }]}>
-            <Text style={[styles.bookButtonText, {fontSize: 18 + adjustmentFactor}]}>{i18n.t("confirm_appointment")}</Text>
+            <Text style={[styles.bookButtonText, {fontSize: 18 + adjustmentFactor, color: theme.background}]}>{i18n.t("confirm_appointment")}</Text>
           </View>
         )}
       </Pressable>
@@ -203,13 +282,6 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 20,
     paddingTop: 40,
-    backgroundColor: '#f0f0f0',
-  },
-  header: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 20,
-    textAlign: 'center',
   },
   doctorImage: {
     width: 100,
@@ -219,7 +291,6 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   doctorName: {
-    fontSize: 22,
     fontWeight: 'bold',
     textAlign: 'center',
   },
@@ -230,8 +301,6 @@ const styles = StyleSheet.create({
     marginVertical: 5,
   },
   specialtyText: {
-    fontSize: 16,
-    color: '#666',
     marginLeft: 5,
   },
   statsContainer: {
@@ -248,49 +317,17 @@ const styles = StyleSheet.create({
     padding: 15,
   },
   statNumber: {
-    fontSize: 18,
     fontWeight: 'bold',
   },
-  statLabel: {
-    fontSize: 12,
-    color: '#666',
-  },
   sectionHeader: {
-    fontSize: 20,
     fontWeight: 'bold',
     marginVertical: 10,
   },
   aboutText: {
-    fontSize: 16,
-    color: '#666',
     marginBottom: 20,
   },
   calendarContainer: {
     marginBottom: 20,
-  },
-  visitHoursContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-  },
-  visitHourBlock: {
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    borderRadius: 10,
-    padding: 10,
-    marginVertical: 5,
-    width: '48%',
-    alignItems: 'center',
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.8,
-    shadowRadius: 5,
-  },
-  visitHourText: {
-    fontSize: 16,
-  },
-  calendar: {
-    height: 350,
   },
   bookButton: {
     paddingVertical: 15,
@@ -300,23 +337,10 @@ const styles = StyleSheet.create({
     marginBottom: 60,
   },
   bookButtonText: {
-    color: 'white',
-    fontSize: 18,
     fontWeight: 'bold',
   },
-  modalContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  modalContent: {
-    width: '80%',
-    backgroundColor: 'white',
-    borderRadius: 10,
-    padding: 20,
-    alignItems: 'center',
-  },
+
+
 });
 
 export default Appointment;

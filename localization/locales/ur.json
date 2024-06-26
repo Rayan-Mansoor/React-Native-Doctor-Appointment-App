@@ -39,6 +39,8 @@
     "invalid_time": "غلط وقت",
     "please_select_time": "براہ کرم صبح 8 بجے سے شام 6 بجے کے درمیان وقت منتخب کریں۔",
     "appointment_confirmed": "ملاقات کی تصدیق ہوگئی",
-    "appointment_scheduled_at": "آپ کی ملاقات کا وقت مقرر کردیا گیا ہے"
+    "appointment_scheduled_at": "آپ کی ملاقات کا وقت مقرر کردیا گیا ہے",
+    "search_doctor": "ڈاکٹر تلاش کریں"
+
   }
   

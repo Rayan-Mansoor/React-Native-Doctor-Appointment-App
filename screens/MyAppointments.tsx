@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { View, Text, FlatList, StyleSheet , SafeAreaView, TouchableOpacity} from 'react-native';
 import { Appointment, RootState, removeAppointment } from '../storage/reduxStore';
@@ -7,18 +7,66 @@ import { MaterialIcons } from '@expo/vector-icons';
 import i18n from '../localization/i18n';
 import doctorsListEN, { Doctor } from '../storage/data/en_doctor_list';
 import doctorsListUR from '../storage/data/ur_doctor_list';
+import { useTheme } from '../context/ThemeProvider';
+import { useMicrophone } from '../context/MicrophoneProvider';
+import { rootNavigation } from '../components/RootNavigation';
+import { useFocusEffect } from '@react-navigation/native';
 
 const UpcomingAppointments = () => {
   const language = useSelector((state: RootState) => state.language.locale);
   const upcomingAppointments = useSelector((state: RootState) => state.appointments.upcomingAppointments);
   const adjustmentFactor = useSelector((state: RootState) => state.size.adjustmentFactor);
-  const [translatedAppointments, setTranslatedAppointments] = useState<Appointment[]>()
-
+  const { microphoneResult } = useMicrophone();
+  const microphoneResultRef = useRef<string | null>(null);
+  
   const dispatch = useDispatch()
+  const theme = useTheme();
+
+  
+  useFocusEffect(
+    useCallback(() => {
+      microphoneResultRef.current = microphoneResult;
+
+      return () => {
+        microphoneResultRef.current = null;
+      };
+    }, [microphoneResult])
+  );
 
   useEffect(() => {
     i18n.locale = language;
   }, [language]);
+
+  useEffect(() => {
+    if (microphoneResultRef.current) {
+      handleVoiceCommand(microphoneResultRef.current);
+      console.log('Microphone Result:', microphoneResultRef.current);
+    }
+  }, [microphoneResult]);
+
+  const handleVoiceCommand = (command: string | null) => {
+    if (!command) return;
+
+    command = command.toLowerCase();
+
+    if (command.includes('setting' || 'settings')) {
+      rootNavigation('Settings');
+    } else if (command.includes('home || main page')) {
+      rootNavigation('Home');
+    } else if (command.includes('cancel') || command.includes('delete')) {
+      const doctorName = command.replace(/(cancel|delete|doctor|appointment|with|of|checkup|the|dr)/g, '').trim();
+      const appointmentToCancel = upcomingAppointments.find(
+        (appointment) => appointment.doctor.name.toLowerCase().includes(`dr. ${doctorName}`)
+      );
+      if (appointmentToCancel) {
+        handleApointmentCancel(appointmentToCancel);
+      } else {
+        console.log('Doctor not found.');
+      }
+    } else {
+      console.log('Command not recognized.');
+    }
+  };
 
   const upcomingDoctors = upcomingAppointments.map((appointment: Appointment) => appointment.doctor);
 
@@ -39,7 +87,7 @@ const UpcomingAppointments = () => {
    }
 
   const renderAppointment = ({ item }: { item: Appointment }) => (
-    <View style={styles.appointmentCard}>
+    <View style={[styles.appointmentCard, {backgroundColor: theme.card}]}>
       <Image source={item.doctor.image } style={styles.doctorImage} />
       <View style={styles.textContainer}>
         <Text style={[styles.doctorName, { fontSize: 18 + adjustmentFactor }]}>{item.doctor.name}</Text>
@@ -47,7 +95,7 @@ const UpcomingAppointments = () => {
         <View style={{flexDirection: 'row', justifyContent: 'space-between'}}>
         <Text style={[styles.appointmentDateTime, { fontSize: 14 + adjustmentFactor }]}>{new Date(item.dateTime).toLocaleString()}</Text>
         <TouchableOpacity onPress={() => handleApointmentCancel(item)}>
-          <MaterialIcons name="delete" size={24} color="black" />
+          <MaterialIcons name="delete" size={24} color={theme.error} />
         </TouchableOpacity>
 
         </View>
@@ -56,13 +104,13 @@ const UpcomingAppointments = () => {
   );
 
   return (
-    <SafeAreaView>
-      <Text style={[styles.sectionHeader, { fontSize: 20 + adjustmentFactor }]}>
-        {i18n.t("upcoming_appointments")}
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <Text style={[styles.sectionHeader, { fontSize: 30 + adjustmentFactor, color: theme.primaryMain }]}>
+      {i18n.t("upcoming_appointments")}
       </Text>
       <View>
         {upcomingAppointments.length === 0 ? (
-          <Text style={[styles.noAppointmentsText, { fontSize: 20 + adjustmentFactor }]}>No upcoming appointments</Text>
+          <Text style={[styles.noAppointmentsText, { fontSize: 20 + adjustmentFactor }]}>{i18n.t("no_upcoming_appointments")}</Text>
         ) : (
           <FlatList
             data={updatedAppointments}
@@ -71,11 +119,14 @@ const UpcomingAppointments = () => {
           />
         )}
       </View>
-    </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  container: {
+    flex:1, 
+  },
   sectionHeader: {
     fontWeight: 'bold',
     marginBottom: 10,
@@ -89,7 +140,6 @@ const styles = StyleSheet.create({
     elevation: 5,
     alignItems: 'center',
     borderRadius: 10,
-    backgroundColor:'white',
     borderBottomWidth: 1,
     borderBottomColor: '#ddd',
   },

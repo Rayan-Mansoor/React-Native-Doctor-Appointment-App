@@ -1,14 +1,14 @@
 {
   "expo": {
-    "name": "DoctorAppointmentApp",
-    "slug": "DoctorAppointmentApp",
+    "name": "Velora",
+    "slug": "Velora",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/logo.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/logo.png",
-      "resizeMode": "contain",
+      "image": "./assets/splash.png",
+      "resizeMode": "cover",
       "backgroundColor": "#ffffff"
     },
     "ios": {
@@ -29,7 +29,7 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "7483f14c-7b6e-40ee-8b02-e5a8d1195ede"
+        "projectId": "eedd994b-5994-4523-825a-dc826a9d7426"
       }
     }
   }

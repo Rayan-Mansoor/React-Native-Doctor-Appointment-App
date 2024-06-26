@@ -1,4 +1,4 @@
-rootProject.name = 'DoctorAppointmentApp'
+rootProject.name = 'Velora'
 
 dependencyResolutionManagement {
   versionCatalogs {
