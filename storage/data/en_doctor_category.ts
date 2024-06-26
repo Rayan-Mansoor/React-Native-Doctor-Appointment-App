@@ -11,7 +11,7 @@ const doctorCategories : Category[] = [
     { title: 'Dermatology', image: require('../../assets/Dermatology.png') },
     { title: 'Orthopedics', image: require('../../assets/Orthopedics.png') },
     { title: 'Gastroenterology', image: require('../../assets/Gastroenterology.png') },
-    { title: 'Pulmonology ', image: require('../../assets/Pulmonology.png') },
+    { title: 'Pulmonology', image: require('../../assets/Pulmonology.png') },
     { title: 'Ophthalmology', image: require('../../assets/Ophthalmology.png') },
   ];
 

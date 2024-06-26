@@ -63,13 +63,41 @@ export const getDisabledDates = (startDate: string, endDate: string, enabledDate
 };
 
 
-export const formatTime = (date: Date) => {
+// export const formatTime = (date: Date) => {
+//   let hours = date.getHours();
+//   const minutes = date.getMinutes();
+//   const ampm = hours >= 12 ? 'PM' : 'AM';
+//   hours = hours % 12;
+//   hours = hours ? hours : 12; // the hour '0' should be '12'
+//   const minutesStr = minutes < 10 ? '0' + minutes : minutes;
+//   return `${hours}:${minutesStr} ${ampm}`;
+// };
+
+export function formatDate(date: Date): string {
+  // Define arrays for days of the week and months
+  const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  
+  // Extract hours, minutes, day of the week, day of the month, month, and year
   let hours = date.getHours();
   const minutes = date.getMinutes();
-  const ampm = hours >= 12 ? 'PM' : 'AM';
+  const dayOfWeek = daysOfWeek[date.getDay()];
+  const dayOfMonth = date.getDate();
+  const month = date.getMonth() + 1; // getMonth() returns month index from 0-11
+  const year = date.getFullYear();
+  
+  // Determine AM/PM
+  const ampm = hours >= 12 ? 'pm' : 'am';
+  
+  // Convert hours from 24-hour to 12-hour format
   hours = hours % 12;
   hours = hours ? hours : 12; // the hour '0' should be '12'
+
+  // Pad minutes with leading zero if necessary
   const minutesStr = minutes < 10 ? '0' + minutes : minutes;
-  return `${hours}:${minutesStr} ${ampm}`;
-};
+
+  // Construct the formatted string
+  const formattedDate = `${hours}:${minutesStr} ${ampm}, ${dayOfWeek}, ${dayOfMonth}/${month}/${year}`;
+  
+  return formattedDate;
+}
 

@@ -13,13 +13,8 @@ import { getRandomHealthTip } from '../utils/utilityFunctions';
 import * as Speech from 'expo-speech';
 import { LandingStackParams } from './LandingPage';
 import { useTooltip } from '../context/TooltipProvider';
-import doctorsList, { Doctor } from '../storage/data/en_doctor_list';
-
-const doctors: Doctor[] = doctorsList;
-
-doctors.sort((a, b) => b.rating - a.rating);
-
-const featuredDoctors: Doctor[] = doctors.slice(0, 2);
+import doctorsListEN, { Doctor } from '../storage/data/en_doctor_list';
+import doctorsListUR from '../storage/data/ur_doctor_list';
 
 type Props = NativeStackScreenProps<LandingStackParams, 'Home'>
 
@@ -32,6 +27,12 @@ const Home: React.FC<Props> = ({navigation}) => {
   const microphoneResultRef = useRef<string | null>(null);
   const [healthTip, setHealthTip] = useState('');
   const { showTooltip, hideTooltip } = useTooltip();
+
+  const doctors: Doctor[] = language == 'en'? doctorsListEN : doctorsListUR
+
+  doctors.sort((a, b) => b.rating - a.rating);
+
+  const featuredDoctors: Doctor[] = doctors.slice(0, 2);
 
   useFocusEffect(
     useCallback(() => {
@@ -133,7 +134,7 @@ const Home: React.FC<Props> = ({navigation}) => {
           <TouchableOpacity key={index} style={styles.doctorCard} onPress={() => handlefeaturedDoctor(doctor)}>
             <Image source={doctor.image} style={styles.doctorImage} />
             <Text style={[styles.doctorName, {fontSize: 16 + adjustmentFactor}]}>{doctor.name}</Text>
-            <Text style={[styles.doctorSpecialty, {fontSize: 14 + adjustmentFactor}]}>{doctor.specialty}</Text>
+            <Text style={[styles.doctorSpecialty, {fontSize: 14 + adjustmentFactor}]}>{i18n.t(doctor.specialty.toLowerCase())}</Text>
             <View style={styles.ratingContainer}>
               <FontAwesome name="star" size={14 + adjustmentFactor} color={theme.rating} />
               <Text style={[styles.ratingText, {fontSize: 14 + adjustmentFactor}]}>{doctor.rating}</Text>

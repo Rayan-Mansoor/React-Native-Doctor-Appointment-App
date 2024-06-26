@@ -3,7 +3,8 @@ import React, { useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, TextInput, Alert } from 'react-native';
 import { Image } from 'expo-image';
 import { FontAwesome } from '@expo/vector-icons';
-import doctorsList, { Doctor } from '../storage/data/en_doctor_list';
+import doctorsListEN, { Doctor } from '../storage/data/en_doctor_list';
+import doctorsListUR from '../storage/data/ur_doctor_list';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { LandingStackParams } from './LandingPage';
 import { useSelector } from 'react-redux';
@@ -28,7 +29,7 @@ const DoctorList: React.FC<Props> = ({route, navigation}) => {
   }, [language]);
 
   const { category } = route.params
-  const filteredDoctors = doctorsList.filter(doctor => doctor.specialty === category);
+  const filteredDoctors = language == 'en'? doctorsListEN.filter(doctor => doctor.specialty === category) : doctorsListUR.filter(doctor => doctor.specialty === category)
 
   const handleDoctorSelect = (doc : Doctor) => {
     navigation.navigate('Appointment', { doctor: doc })
@@ -49,7 +50,7 @@ const DoctorList: React.FC<Props> = ({route, navigation}) => {
             <Image source={doctor.image} style={styles.doctorImage} />
             <View style={styles.doctorInfo}>
               <Text style={[styles.doctorName, {fontSize: 18 + adjustmentFactor}]}>{doctor.name}</Text>
-              <Text style={[styles.doctorSpecialty, {fontSize: 14 + adjustmentFactor}]}>{doctor.specialty}, {doctor.location}</Text>
+              <Text style={[styles.doctorSpecialty, {fontSize: 14 + adjustmentFactor}]}>{i18n.t(doctor.specialty.toLowerCase())}, {doctor.location}</Text>
               <View style={styles.rating}>
                 <FontAwesome name="star" size={14 + adjustmentFactor} color={theme.rating}/>
                 <Text style={[styles.ratingText, {fontSize: 14 + adjustmentFactor}]}>{doctor.rating}</Text>

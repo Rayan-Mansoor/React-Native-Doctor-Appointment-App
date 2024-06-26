@@ -9,11 +9,6 @@ import store, { RootState } from './storage/reduxStore';
 import i18n from './localization/i18n';
 import { useTheme } from './context/ThemeProvider';
 
-import HomeScreen from './screens/Home';
-import AboutScreen from './screens/About';
-import Appointment from './screens/Appointment';
-import DoctorCategory from './screens/DoctorCategory';
-import DoctorList from './screens/DoctorList';
 import LandingPage from './screens/LandingPage';
 import Settings from './screens/Settings';
 import ThemeProvider from './context/ThemeProvider';

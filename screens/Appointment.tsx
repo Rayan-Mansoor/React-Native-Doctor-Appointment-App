@@ -7,7 +7,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { RootState, addAppointment } from '../storage/reduxStore';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { LandingStackParams } from './LandingPage';
-import { DateObject, generateRandomDates, getDisabledDates } from '../utils/utilityFunctions';
+import { DateObject, formatDate, generateRandomDates, getDisabledDates } from '../utils/utilityFunctions';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import i18n from '../localization/i18n';
 
@@ -50,8 +50,8 @@ const Appointment: React.FC<Props> = ({route}) => {
   const confirmAppointment = () => {
     const appointmentDateTime = constructDateTime(selectedDate!!,selectedTime)
     dispatch(addAppointment({doctor, dateTime: appointmentDateTime.toISOString()}));
-    // setSelectedTime(time);
-    // You can also add any additional logic you want to handle when a time is selected
+      Alert.alert(i18n.t("appointment_confirmed"), `${i18n.t("appointment_scheduled_at")} ${formatDate(appointmentDateTime)}`);
+
   };
 
   const constructDateTime = (dateString: string, time: Date): Date => {
@@ -92,6 +92,7 @@ const Appointment: React.FC<Props> = ({route}) => {
 
         setCompleteDate(timeString);
       } else {
+        Alert.alert(i18n.t("invalid_time"), `${i18n.t("please_select_time")}`);
         Alert.alert('Invalid Time', 'Please select a time between 8 AM and 6 PM.');
         setTimeModalVisible(false)
       }

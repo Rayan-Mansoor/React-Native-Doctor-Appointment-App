@@ -23,7 +23,6 @@ const Settings: React.FC<Props> = ({navigation}) => {
 
   const theme = useTheme();
 
-  const [fontSize, setFontSize] = useState(16);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [colorBlindnessEnabled, setColorBlindnessEnabled] = useState(false);
   const [colorBlindnessType, setColorBlindnessType] = useState<string>(currentTheme);
@@ -141,7 +140,6 @@ const Settings: React.FC<Props> = ({navigation}) => {
   const getNotificationState = () => {
     try {
       const value = mmkvStorage.getBoolean('notificationsEnabled');
-      console.log(value)
       if (value !== undefined) {
         setNotificationsEnabled(value)
       } else {
@@ -345,7 +343,7 @@ const Settings: React.FC<Props> = ({navigation}) => {
       <Pressable>
         {({ pressed }) => (
           <View style={{height: 40}}>
-            <Text>Confirm Appointment</Text>
+            <Text></Text>
           </View>
         )}
       </Pressable>
