@@ -21,12 +21,10 @@ const TypeWriterEffect: React.FC<TypeWriterEffectProps> = ({
   const index = useRef(0);
   const typingTimer = useRef<number | undefined>(undefined);
   const blinkingCursorTimer = useRef<number | undefined>(undefined);
+  const displayedTextRef = useRef('');
 
   useEffect(() => {
     resetTypingAnimation();
-    typingAnimation();
-    blinkingCursorAnimation();
-
     return () => {
       clearTimeout(typingTimer.current);
       clearInterval(blinkingCursorTimer.current);
@@ -35,17 +33,20 @@ const TypeWriterEffect: React.FC<TypeWriterEffectProps> = ({
 
   const resetTypingAnimation = () => {
     setDisplayedText('');
+    displayedTextRef.current = '';
     index.current = 0;
     clearTimeout(typingTimer.current);
+    clearInterval(blinkingCursorTimer.current);
+    typingAnimation();
+    blinkingCursorAnimation();
   };
 
   const typingAnimation = () => {
     clearTimeout(typingTimer.current);
-
     if (index.current < text.length) {
-      setDisplayedText(prev => prev + text.charAt(index.current));
+      displayedTextRef.current += text.charAt(index.current);
+      setDisplayedText(displayedTextRef.current);
       index.current++;
-
       typingTimer.current = window.setTimeout(typingAnimation, typingAnimationDuration);
     }
   };
@@ -95,6 +96,7 @@ const styles = StyleSheet.create({
     opacity: 0,
   },
 });
+
 
 TypeWriterEffect.propTypes = {
   text: PropTypes.string.isRequired,

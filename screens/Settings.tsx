@@ -27,7 +27,7 @@ const Settings: React.FC<Props> = ({navigation}) => {
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [colorBlindnessEnabled, setColorBlindnessEnabled] = useState(false);
   const [colorBlindnessType, setColorBlindnessType] = useState<string>(currentTheme);
-  const { microphoneResult } = useMicrophone();
+  const { microphoneResult, setMicrophoneResult } = useMicrophone();
   const microphoneResultRef = useRef<string | null>(null);
 
   useFocusEffect(
@@ -44,12 +44,13 @@ const Settings: React.FC<Props> = ({navigation}) => {
     getNotificationState()
    }, [])
 
-  useEffect(() => {
+   useEffect(() => {
     if (microphoneResultRef.current) {
       handleVoiceCommand(microphoneResultRef.current);
       console.log('Microphone Result:', microphoneResultRef.current);
+      setMicrophoneResult('')
     }
-  }, [microphoneResult]);
+  }, [microphoneResult, setMicrophoneResult]);
   
 
   useEffect(() => {
@@ -64,9 +65,9 @@ const Settings: React.FC<Props> = ({navigation}) => {
     command = command.toLowerCase();
     console.log('Voice Command:', command);
   
-    if (command.includes('home || main page')) {
+    if (command.includes('home') || command.includes('main page')) {
       rootNavigation('Home');
-    } else if (command.includes('upcoming appointments' || 'my appointments')) {
+    } else if (command.includes('upcoming appointments') || command.includes('my appointments')) {
       rootNavigation('MyAppointments');
     } else if (command.includes("change name to")) {
       const newName = command.split("change name to ")[1];
@@ -84,17 +85,17 @@ const Settings: React.FC<Props> = ({navigation}) => {
     } else if (command.includes("set font size to")) {
       const newSize = parseInt(command.split("set font size to ")[1], 10);
       handleSizeChange(newSize);
-    } else if (command.includes("set language to english")) {
+    } else if (command.includes("set language to english") || command.includes('language english') || command.includes('english language')) {
       handleLanguageChange('en');
-    } else if (command.includes("set language to urdu")) {
+    } else if (command.includes("set language to urdu") || command.includes('language urdu') || command.includes('urdu language')) {
       handleLanguageChange('ur');
-    } else if (command.includes("turn on notifications")) {
+    } else if (command.includes("turn on notifications")  || command.includes("notifications on")) {
       setNotificationsEnabled(true);
-    } else if (command.includes("turn off notifications")) {
+    } else if (command.includes("turn off notifications") || command.includes("notifications off")) {
       setNotificationsEnabled(false);
-    } else if (command.includes("enable color blindness mode")) {
+    } else if (command.includes("enable color blindness mode")  || command.includes("color blindness mode off")) {
       handleColorBlindnessToggle();
-    } else if (command.includes("disable color blindness mode")) {
+    } else if (command.includes("disable color blindness mode")  || command.includes("color blindness mode off")) {
       handleColorBlindnessToggle();
     } else if (command.includes("set color blindness mode to protanopia")) {
       handleColorBlindnessChange('protanopia');
@@ -102,9 +103,7 @@ const Settings: React.FC<Props> = ({navigation}) => {
       handleColorBlindnessChange('deuteranopia');
     } else if (command.includes("set color blindness mode to tritanopia")) {
       handleColorBlindnessChange('tritanopia');
-    } else if (command.includes("home")) {
-      navigation.goBack();
-    }else {
+    } else {
       console.log('Command not recognized.');
     }
   };
@@ -234,7 +233,7 @@ const Settings: React.FC<Props> = ({navigation}) => {
       <View style={styles.inputContainer}>
         <Text style={[styles.label, {fontSize: 16 + adjustmentFactor}]}>{i18n.t('name')}</Text>
         <TextInput
-          style={[styles.input, {fontSize: 12 + adjustmentFactor, backgroundColor: theme.card}]}
+          style={[styles.input, {fontSize: 13 + adjustmentFactor, backgroundColor: theme.card}]}
           value={user.name}
           placeholder='John Doe'
           onChangeText={(value) => handleBioChange('name', value)}
@@ -243,7 +242,7 @@ const Settings: React.FC<Props> = ({navigation}) => {
       <View style={styles.inputContainer}>
         <Text style={[styles.label, {fontSize: 16 + adjustmentFactor}]}>{i18n.t('email')}</Text>
         <TextInput
-          style={[styles.input, {fontSize: 12 + adjustmentFactor, backgroundColor: theme.card}]}
+          style={[styles.input, {fontSize: 13 + adjustmentFactor, backgroundColor: theme.card}]}
           value={user.email}
           placeholder='john@example.com'
           onChangeText={(value) => handleBioChange('email', value)}
@@ -252,7 +251,7 @@ const Settings: React.FC<Props> = ({navigation}) => {
       <View style={styles.inputContainer}>
         <Text style={[styles.label, {fontSize: 16 + adjustmentFactor}]}>{i18n.t('phone')}</Text>
         <TextInput
-          style={[styles.input, {fontSize: 12 + adjustmentFactor, backgroundColor: theme.card}]}
+          style={[styles.input, {fontSize: 13 + adjustmentFactor, backgroundColor: theme.card}]}
           value={user.phone}
           placeholder='+923348809086'
           onChangeText={(value) => handleBioChange('phone', value)}
@@ -263,6 +262,9 @@ const Settings: React.FC<Props> = ({navigation}) => {
       <View style={styles.sliderContainer}>
         <Slider
           style={styles.slider}
+          minimumTrackTintColor= {theme.primaryThumb}
+          maximumTrackTintColor= {theme.primaryThumb}
+          thumbTintColor= {theme.primaryThumb}
           minimumValue={-5}
           maximumValue={20}
           step={2}

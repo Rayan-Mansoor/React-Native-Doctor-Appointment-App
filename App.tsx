@@ -25,6 +25,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { TooltipProvider } from './context/TooltipProvider';
 import RecordingToast from './components/RecordingToast';
 import { navigationRef } from './components/RootNavigation';
+import 'react-native-get-random-values'
 
 const HEALTH_TIP_NOTIFICATION_TASK = 'health-tip-notification';
 

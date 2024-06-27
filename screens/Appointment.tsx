@@ -13,8 +13,7 @@ import i18n from '../localization/i18n';
 import { useMicrophone } from '../context/MicrophoneProvider';
 import { rootNavigation } from '../components/RootNavigation';
 import { useFocusEffect } from '@react-navigation/native';
-import { parse, format } from 'date-fns';
-
+import { v4 as uuidv4 } from 'uuid';
 
 interface MarkedDates {
   [key: string]: {
@@ -27,7 +26,7 @@ interface MarkedDates {
 
 type Props = NativeStackScreenProps<LandingStackParams, 'Appointment'>
 
-const Appointment: React.FC<Props> = ({route}) => {
+const Appointment: React.FC<Props> = ({navigation, route}) => {
   const language = useSelector((state: RootState) => state.language.locale);
   const adjustmentFactor = useSelector((state: RootState) => state.size.adjustmentFactor);
 
@@ -36,7 +35,7 @@ const Appointment: React.FC<Props> = ({route}) => {
   const [timeModalVisible, setTimeModalVisible] = useState(false);
   const [completeDate, setCompleteDate] = useState('');
   
-  const { microphoneResult } = useMicrophone();
+  const { microphoneResult, setMicrophoneResult } = useMicrophone();
   const microphoneResultRef = useRef<string | null>(null);
   
   const { doctor } = route.params
@@ -59,19 +58,24 @@ const Appointment: React.FC<Props> = ({route}) => {
     if (microphoneResultRef.current) {
       handleVoiceCommand(microphoneResultRef.current);
       console.log('Microphone Result:', microphoneResultRef.current);
+      setMicrophoneResult('')
     }
-  }, [microphoneResult]);
+  }, [microphoneResult, setMicrophoneResult]);
+
+  const handleAlertOkPress = () => { 
+    navigation.replace("Home")
+   }
 
   const handleVoiceCommand = (command: string | null) => {
     if (!command) return;
 
     command = command.toLowerCase();
 
-    if (command.includes('home || main page')) {
+    if (command.includes('home') || command.includes('main page')) {
       rootNavigation('Home');
-    } else if (command.includes('setting' || 'settings')) {
+    } else if (command.includes('setting') || command.includes('settings')) {
       rootNavigation('Settings');
-    } else if (command.includes('upcoming appointments' || 'my appointments')) {
+    } else if (command.includes('upcoming appointments') || command.includes('my appointments')) {
       rootNavigation('MyAppointments');
       // all the tasks the user can perform on this page should have a corresponding voice command
     // } else if (command.includes('select date')) {
@@ -126,9 +130,9 @@ const Appointment: React.FC<Props> = ({route}) => {
 
   const confirmAppointment = () => {
     const appointmentDateTime = constructDateTime(selectedDate!!,selectedTime)
-    dispatch(addAppointment({doctor, dateTime: appointmentDateTime.toISOString()}));
-      Alert.alert(i18n.t("appointment_confirmed"), `${i18n.t("appointment_scheduled_at")} ${formatDate(appointmentDateTime)}`);
-
+    const appointmentID = uuidv4()
+    dispatch(addAppointment({id: appointmentID, doctor, dateTime: appointmentDateTime.toISOString()}));
+    Alert.alert(i18n.t("appointment_confirmed"), `${i18n.t("appointment_scheduled_at")} ${formatDate(appointmentDateTime)}`, [{text: 'OK', onPress: handleAlertOkPress}]);
   };
 
   const constructDateTime = (dateString: string, time: Date): Date => {

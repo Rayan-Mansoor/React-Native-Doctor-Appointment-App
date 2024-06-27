@@ -1,28 +1,37 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { View, Text, FlatList, StyleSheet , SafeAreaView, TouchableOpacity} from 'react-native';
-import { Appointment, RootState, removeAppointment } from '../storage/reduxStore';
+import { View, Text, FlatList, StyleSheet, Modal, Alert, TouchableOpacity } from 'react-native';
+import { Appointment, RootState, removeAppointment, updateAppointment } from '../storage/reduxStore';
 import { Image } from 'expo-image';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons, FontAwesome } from '@expo/vector-icons';
 import i18n from '../localization/i18n';
-import doctorsListEN, { Doctor } from '../storage/data/en_doctor_list';
+import doctorsListEN from '../storage/data/en_doctor_list';
 import doctorsListUR from '../storage/data/ur_doctor_list';
 import { useTheme } from '../context/ThemeProvider';
 import { useMicrophone } from '../context/MicrophoneProvider';
 import { rootNavigation } from '../components/RootNavigation';
 import { useFocusEffect } from '@react-navigation/native';
+import { Calendar } from 'react-native-calendars';
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import { DateObject } from '../utils/utilityFunctions';
+import { format } from 'date-fns';
 
-const UpcomingAppointments = () => {
+const UpcomingAppointments: React.FC = () => {
   const language = useSelector((state: RootState) => state.language.locale);
   const upcomingAppointments = useSelector((state: RootState) => state.appointments.upcomingAppointments);
   const adjustmentFactor = useSelector((state: RootState) => state.size.adjustmentFactor);
-  const { microphoneResult } = useMicrophone();
+  const { microphoneResult, setMicrophoneResult } = useMicrophone();
   const microphoneResultRef = useRef<string | null>(null);
-  
-  const dispatch = useDispatch()
+
+  const dispatch = useDispatch();
   const theme = useTheme();
 
-  
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [selectedTime, setSelectedTime] = useState(new Date());
+  const [timeModalVisible, setTimeModalVisible] = useState(false);
+
   useFocusEffect(
     useCallback(() => {
       microphoneResultRef.current = microphoneResult;
@@ -41,17 +50,18 @@ const UpcomingAppointments = () => {
     if (microphoneResultRef.current) {
       handleVoiceCommand(microphoneResultRef.current);
       console.log('Microphone Result:', microphoneResultRef.current);
+      setMicrophoneResult('')
     }
-  }, [microphoneResult]);
+  }, [microphoneResult, setMicrophoneResult]);
 
   const handleVoiceCommand = (command: string | null) => {
     if (!command) return;
 
     command = command.toLowerCase();
 
-    if (command.includes('setting' || 'settings')) {
+    if (command.includes('setting') || command.includes('settings')) {
       rootNavigation('Settings');
-    } else if (command.includes('home || main page')) {
+    } else if (command.includes('home') || command.includes('main page')) {
       rootNavigation('Home');
     } else if (command.includes('cancel') || command.includes('delete')) {
       const doctorName = command.replace(/(cancel|delete|doctor|appointment|with|of|checkup|the|dr)/g, '').trim();
@@ -59,7 +69,7 @@ const UpcomingAppointments = () => {
         (appointment) => appointment.doctor.name.toLowerCase().includes(`dr. ${doctorName}`)
       );
       if (appointmentToCancel) {
-        handleApointmentCancel(appointmentToCancel);
+        handleAppointmentCancel(appointmentToCancel);
       } else {
         console.log('Doctor not found.');
       }
@@ -75,29 +85,71 @@ const UpcomingAppointments = () => {
     : doctorsListUR.filter(doctor => upcomingDoctors.some(upcomingDoctor => upcomingDoctor.id === doctor.id));
 
   const updatedAppointments = upcomingAppointments.map((appointment: Appointment) => {
-      const updatedDoctor = filteredDoctors.find(doctor => doctor.id === appointment.doctor.id);
-      return {
-        ...appointment,
-        doctor: updatedDoctor || appointment.doctor // Fallback to the original doctor if not found in filteredDoctors
-      };
-    });
+    const updatedDoctor = filteredDoctors.find(doctor => doctor.id === appointment.doctor.id);
+    return {
+      ...appointment,
+      doctor: updatedDoctor || appointment.doctor // Fallback to the original doctor if not found in filteredDoctors
+    };
+  });
 
-  const handleApointmentCancel = (item : Appointment) => { 
-    dispatch(removeAppointment(item.dateTime));
-   }
+  const handleAppointmentCancel = (item: Appointment) => {
+    dispatch(removeAppointment(item.id));
+  };
+
+  const handleAppointmentTimings = (item: Appointment) => {
+    setSelectedAppointment(item);
+    setSelectedDate(format(new Date(item.dateTime), 'yyyy-MM-dd'));
+    setModalVisible(true); // Show the calendar modal
+  };
+  
+  const handleDaySelect = (day: DateObject) => {
+    setSelectedDate(day.dateString);
+    setTimeModalVisible(true); // Show the time picker modal after a date is selected
+    setModalVisible(false); // Hide the calendar modal
+  };
+
+  const handleTimeSelected = (event: DateTimePickerEvent, selectedTime1: Date | undefined) => {
+    const currentTime = selectedTime1 || selectedTime;
+    setSelectedTime(currentTime);
+
+    if (event.type === 'set') {
+      setTimeModalVisible(false);
+      confirmAppointmentUpdate()
+    } else if (event.type === 'dismissed') {
+      setTimeModalVisible(false);
+    }
+  };
+
+  const confirmAppointmentUpdate = () => {
+    if (selectedAppointment && selectedDate) {
+      const updatedDateTime = constructDateTime(selectedDate, selectedTime);
+      dispatch(updateAppointment({ ...selectedAppointment, dateTime: updatedDateTime.toISOString() }));
+      Alert.alert(i18n.t("appointment_updated"), `${i18n.t("appointment_updated_to")} ${format(updatedDateTime, 'yyyy-MM-dd HH:mm')}`);
+      setModalVisible(false);
+    }
+  };
+
+  const constructDateTime = (dateString: string, time: Date): Date => {
+    const [year, month, day] = dateString.split('-').map(Number);
+    const hours = time.getHours();
+    const minutes = time.getMinutes();
+    return new Date(year, month - 1, day, hours, minutes);
+  };
 
   const renderAppointment = ({ item }: { item: Appointment }) => (
-    <View style={[styles.appointmentCard, {backgroundColor: theme.card}]}>
-      <Image source={item.doctor.image } style={styles.doctorImage} />
+    <View style={[styles.appointmentCard, { backgroundColor: theme.card }]}>
+      <Image source={item.doctor.image} style={styles.doctorImage} />
       <View style={styles.textContainer}>
         <Text style={[styles.doctorName, { fontSize: 18 + adjustmentFactor }]}>{item.doctor.name}</Text>
         <Text style={[styles.doctorSpecialty, { fontSize: 16 + adjustmentFactor }]}>{i18n.t(item.doctor.specialty.toLowerCase())}</Text>
-        <View style={{flexDirection: 'row', justifyContent: 'space-between'}}>
-        <Text style={[styles.appointmentDateTime, { fontSize: 14 + adjustmentFactor }]}>{new Date(item.dateTime).toLocaleString()}</Text>
-        <TouchableOpacity onPress={() => handleApointmentCancel(item)}>
-          <MaterialIcons name="delete" size={24} color={theme.error} />
-        </TouchableOpacity>
-
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+          <Text style={[styles.appointmentDateTime, { fontSize: 14 + adjustmentFactor }]}>{new Date(item.dateTime).toLocaleString()}</Text>
+          <TouchableOpacity onPress={() => handleAppointmentTimings(item)}>
+            <FontAwesome name="calendar-times-o" size={24} color="black" />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => Alert.alert(i18n.t("cancel_appointment"), `${i18n.t("cancel_appointment_confirmation")}`, [{text: i18n.t("yes"),onPress: () => handleAppointmentCancel(item)}, {text: i18n.t("no"), onPress: () => {}}])}>
+            <MaterialIcons name="delete" size={24} color='black' />
+          </TouchableOpacity>
         </View>
       </View>
     </View>
@@ -106,7 +158,7 @@ const UpcomingAppointments = () => {
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <Text style={[styles.sectionHeader, { fontSize: 30 + adjustmentFactor, color: theme.primaryMain }]}>
-      {i18n.t("upcoming_appointments")}
+        {i18n.t("upcoming_appointments")}
       </Text>
       <View>
         {upcomingAppointments.length === 0 ? (
@@ -115,23 +167,55 @@ const UpcomingAppointments = () => {
           <FlatList
             data={updatedAppointments}
             renderItem={renderAppointment}
-            keyExtractor={(item, index) => index.toString()}
+            keyExtractor={(item) => item.id}
           />
         )}
       </View>
+  
+      <Modal
+        transparent={true}
+        animationType="slide"
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalContainer}>
+          <Calendar
+            current={selectedDate || new Date().toISOString().split('T')[0]}
+            onDayPress={handleDaySelect}
+            markedDates={{ [selectedDate || '']: { selected: true, selectedColor: theme.primaryMain } }}
+          />
+        </View>
+      </Modal>
+  
+      <Modal
+        transparent={true}
+        animationType="slide"
+        visible={timeModalVisible}
+        onRequestClose={() => setTimeModalVisible(false)}
+      >
+        <View style={styles.modalContainer}>
+          <DateTimePicker
+            value={selectedTime}
+            mode="time"
+            is24Hour={false}
+            display="clock"
+            onChange={handleTimeSelected}
+          />
+        </View>
+      </Modal>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    flex:1, 
+    flex: 1,
   },
   sectionHeader: {
     fontWeight: 'bold',
     marginBottom: 10,
     marginTop: 40,
-    alignSelf: 'center'
+    alignSelf: 'center',
   },
   appointmentCard: {
     flexDirection: 'row',
@@ -140,35 +224,46 @@ const styles = StyleSheet.create({
     elevation: 5,
     alignItems: 'center',
     borderRadius: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ddd',
   },
   doctorImage: {
-    width: 70,
-    height: 70,
-    borderRadius: 25,
+    width: 80,
+    height: 80,
     marginRight: 10,
+    borderRadius: 40,
   },
   textContainer: {
     flex: 1,
-    justifyContent: 'center',
   },
   doctorName: {
-    fontSize: 18,
     fontWeight: 'bold',
   },
   doctorSpecialty: {
-    fontSize: 16,
-    color: '#888',
+    fontStyle: 'italic',
+    color: 'gray',
   },
   appointmentDateTime: {
-    fontSize: 14,
-    color: '#555',
+    marginTop: 5,
   },
   noAppointmentsText: {
+    marginTop: 30,
     textAlign: 'center',
-    color: '#888',
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  confirmButton: {
+    backgroundColor: 'blue',
+    padding: 10,
+    borderRadius: 5,
     marginTop: 20,
+  },
+  confirmButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+    textAlign: 'center',
   },
 });
 

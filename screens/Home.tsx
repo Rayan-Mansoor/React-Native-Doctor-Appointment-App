@@ -16,6 +16,12 @@ import { useTooltip } from '../context/TooltipProvider';
 import doctorsListEN, { Doctor } from '../storage/data/en_doctor_list';
 import doctorsListUR from '../storage/data/ur_doctor_list';
 import { rootNavigation } from '../components/RootNavigation';
+import LottieView from 'lottie-react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import * as SplashScreen from 'expo-splash-screen';
+import { useFonts } from 'expo-font';
+
+SplashScreen.preventAutoHideAsync();
 
 
 type Props = NativeStackScreenProps<LandingStackParams, 'Home'>
@@ -25,16 +31,27 @@ const Home: React.FC<Props> = ({navigation}) => {
   const language = useSelector((state: RootState) => state.language.locale);
   const adjustmentFactor = useSelector((state: RootState) => state.size.adjustmentFactor);
   const theme = useTheme();
-  const { microphoneResult } = useMicrophone();
+  const { microphoneResult, setMicrophoneResult } = useMicrophone();
   const microphoneResultRef = useRef<string | null>(null);
   const [healthTip, setHealthTip] = useState('');
   const { showTooltip, hideTooltip } = useTooltip();
+  const [fontsLoaded, fontError] = useFonts({
+    'Roboto-Bold': require('../fonts/Roboto/Roboto-Bold.ttf'),
+    'Roboto-Regular': require('../fonts/Roboto/Roboto-Regular.ttf'),
+  });
 
   const doctors: Doctor[] = language == 'en'? doctorsListEN : doctorsListUR
 
   doctors.sort((a, b) => b.rating - a.rating);
 
-  const featuredDoctors: Doctor[] = doctors.slice(0, 2);
+  const featuredDoctors: Doctor[] = doctors.slice(0, 4);
+
+  
+  const onLayoutRootView = useCallback(async () => {
+    if (fontsLoaded || fontError) {
+      await SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded, fontError]);
 
   useFocusEffect(
     useCallback(() => {
@@ -46,13 +63,13 @@ const Home: React.FC<Props> = ({navigation}) => {
     }, [microphoneResult])
   );
 
-
   useEffect(() => {
     if (microphoneResultRef.current) {
       handleVoiceCommand(microphoneResultRef.current);
       console.log('Microphone Result:', microphoneResultRef.current);
+      setMicrophoneResult('')
     }
-  }, [microphoneResult]);
+  }, [microphoneResult, setMicrophoneResult]);
   
   useEffect(() => {
     i18n.locale = language;
@@ -66,13 +83,13 @@ const Home: React.FC<Props> = ({navigation}) => {
 
     command = command.toLowerCase();
 
-    if (command.includes('setting' || 'settings')) {
+    if (command.includes('setting') || command.includes('settings')) {
       rootNavigation('Settings');
-    } else if (command.includes('upcoming appointments' || 'my appointments')) {
+    } else if (command.includes('upcoming appointments') || command.includes('my appointments')) {
       rootNavigation('MyAppointments');
-    } else if (command.includes('book appointment')) {
+    } else if (command.includes('book appointment') || command.includes('book an appointment') || command.includes('book me an appointment')) {
       navigation.navigate('DoctorCategory');
-    } else if (command.includes('featured doctors' || 'best doctors')) {
+    } else if (command.includes('featured doctors') || command.includes('best doctors')) {
       // Scroll to featured doctors section
       // Assuming you have a ref to the ScrollView and can scroll to a specific position
     } else {
@@ -103,6 +120,7 @@ const Home: React.FC<Props> = ({navigation}) => {
 
   };
 
+
   const handlefeaturedDoctor = (doc: Doctor) => {
     navigation.navigate('Appointment', { doctor: doc })
 
@@ -115,22 +133,27 @@ const Home: React.FC<Props> = ({navigation}) => {
   };
 
   return (
-    <ScrollView style={[styles.container, {backgroundColor: theme.background}]}>
-      <Text style={[styles.header, {fontSize: 30 + adjustmentFactor, color: theme.primaryMain}]}>{i18n.t('welcome')}</Text>
+    <ScrollView style={[styles.container, {backgroundColor: theme.background}]} onLayout={onLayoutRootView}>
+      <Text style={[styles.header, {fontSize: 30 + adjustmentFactor, color: theme.primaryMain, shadowColor: theme.primaryMain }]}>{i18n.t('welcome')}</Text>
+      <View style={{justifyContent: 'center', alignItems: 'center'}}>
 
+    </View>
       <Text style={[styles.sectionHeader, {fontSize: 20 + adjustmentFactor}]}>{i18n.t('daily_tips')}</Text>
-      <View style={[styles.card, {backgroundColor: theme.card}]}>
-      <TypeWriterEffect
+      <View style={[styles.heathTipCard, { backgroundColor: theme.card, flexDirection: 'row', alignItems: 'center' }]}>
+      <View style={styles.textContainer}>
+        <TypeWriterEffect
           text={healthTip}
-          style={[styles.userInfoText, {fontSize: 16 + adjustmentFactor}]}
+          style={[styles.userInfoText, { fontSize: 16 + adjustmentFactor}]}
         />
         <TouchableOpacity style={styles.iconContainer} onPress={() => handleSpeech(healthTip)}>
           <Ionicons name="volume-high-outline" size={24} color="black" />
         </TouchableOpacity>
       </View>
+      <Image source={require('../assets/healthTip.gif')} style={styles.animation} />
+    </View>
 
       <Text style={[styles.sectionHeader, {fontSize: 20 + adjustmentFactor}]}>{i18n.t('upcoming_appointments')}</Text>
-      <View style={[styles.card, {backgroundColor: theme.card}]}>
+      <View style={[styles.appointmentsCard, {backgroundColor: theme.card}]}>
       {upcomingAppointments.length === 0 ? (
         <Text style={[styles.userInfoText, {fontSize: 16 + adjustmentFactor}]}>{i18n.t('no_upcoming_appointments')}</Text>
       ) : (
@@ -141,7 +164,7 @@ const Home: React.FC<Props> = ({navigation}) => {
       <Text style={[styles.sectionHeader, {fontSize: 20 + adjustmentFactor}]}>{i18n.t('featured_doctors')}</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.featuredDoctorsContainer}>
         {featuredDoctors.map((doctor, index) => (
-          <TouchableOpacity key={index} style={[styles.doctorCard, {backgroundColor: theme.card}]} onPress={() => handlefeaturedDoctor(doctor)}>
+          <TouchableOpacity key={index} style={[styles.doctorCard, {backgroundColor: theme.card}]} onPress={() => handlefeaturedDoctor(doctor)} onLongPress={handleLongPress("A top rated doctor")}>
             <Image source={doctor.image} style={styles.doctorImage} />
             <Text style={[styles.doctorName, {fontSize: 16 + adjustmentFactor}]}>{doctor.name}</Text>
             <Text style={[styles.doctorSpecialty, {fontSize: 14 + adjustmentFactor}]}>{i18n.t(doctor.specialty.toLowerCase())}</Text>
@@ -153,7 +176,7 @@ const Home: React.FC<Props> = ({navigation}) => {
         ))}
       </ScrollView>
 
-      <TouchableOpacity style={[styles.bookButton, {backgroundColor: theme.primaryMain}]} onPress={() => { navigation.navigate("DoctorCategory")}} onLongPress={handleLongPress("book an appointment with a doctor")}>
+      <TouchableOpacity style={[styles.bookButton, {backgroundColor: theme.primaryMain}]} onPress={() => { navigation.navigate("DoctorCategory")}} onLongPress={handleLongPress("Book an appointment with a doctor")}>
         <Text style={[styles.bookButtonText, {fontSize: 18 + adjustmentFactor}]}>{i18n.t('book_appointment')}</Text>
       </TouchableOpacity>
     </ScrollView>
@@ -167,11 +190,11 @@ const styles = StyleSheet.create({
     paddingTop: 40,
   },
   header: {
-    fontWeight: 'bold',
+    fontFamily: 'Roboto-Bold',
+    marginTop: 10,
     marginBottom: 20,
     textAlign: 'center',
     elevation: 5,
-    shadowColor: "grey",
     shadowOffset: { width: 1, height: 1 }
   },
   userInfoContainer: {
@@ -180,27 +203,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 20,
   },
-  userInfoText: {
-    fontWeight: 'bold',
-    color: 'grey'
-  },
+
   sectionHeader: {
     fontWeight: 'bold',
     marginVertical: 10,
   },
-  card: {
-    padding: 20,
-    borderRadius: 10,
-    marginBottom: 20,
-    margin:5,
-    elevation: 3,
-    alignItems: 'center',
-  },
-  iconContainer: {
-    position: 'absolute',
-    bottom: 10,  // Adjust this value to your preference
-    right: 10,   // Adjust this value to your preference
-  },
+
   appointmentText: {
     color: '#666',
   },
@@ -211,17 +219,13 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 10,
     marginRight: 10,
+    marginLeft: 20,
     width: 150,
     elevation: 5,
     margin: 10,
     alignItems: 'center',
   },
-  doctorImage: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    marginBottom: 10,
-  },
+
   doctorName: {
     fontWeight: 'bold',
     textAlign: 'center',
@@ -259,6 +263,57 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     marginLeft: 10,
   },
+  lottie: {
+    width: 200, // Customize the size as needed
+    height: 200,
+  },
+  heathTipCard: {
+    padding: 5,
+    borderRadius: 10,
+    marginBottom: 20,
+    margin: 5,
+    elevation: 3,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  appointmentsCard: {
+    borderRadius: 10,
+    marginBottom: 20,
+    margin: 5,
+    elevation: 3,
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 20, 
+    justifyContent: 'center'
+  },
+  textContainer: {
+    flex: 1,
+    flexShrink: 1,
+    padding: 10,
+    marginRight: 10, 
+  },
+  userInfoText: {
+    fontWeight: 'bold',
+    color: 'grey',
+  },
+  doctorImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    marginBottom: 10,
+  },
+  iconContainer: {
+    position: 'absolute',
+    bottom: 0,  
+    right: 10, 
+  },
+  animation: {
+    width: 100,
+    height: 100,
+    marginBottom: 10,
+
+  }
+  
 });
 
 export default Home;

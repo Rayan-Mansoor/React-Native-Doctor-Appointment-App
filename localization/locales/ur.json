@@ -1,5 +1,5 @@
 {
-    "welcome": "ہیلتھ کیئر میں خوش آمدید",
+    "welcome": "ویلورا میں خوش آمدید",
     "hello_user": "ہیلو، صارف!",
     "daily_tips": "صحت کا مشورہ",
     "upcoming_appointments": "آنے والے اپائنٹمنٹس",
@@ -40,7 +40,13 @@
     "please_select_time": "براہ کرم صبح 8 بجے سے شام 6 بجے کے درمیان وقت منتخب کریں۔",
     "appointment_confirmed": "ملاقات کی تصدیق ہوگئی",
     "appointment_scheduled_at": "آپ کی ملاقات کا وقت مقرر کردیا گیا ہے",
-    "search_doctor": "ڈاکٹر تلاش کریں"
+    "search_doctor": "ڈاکٹر تلاش کریں",
+    "appointment_updated": "ملاقات اپڈیٹ ہو گئی ہے",
+    "appointment_updated_to": "ملاقات اپڈیٹ ہو گئی ہے ",
+    "cancel_appointment" : "اپوائنٹمنٹ منسوخ کریں",
+    "cancel_appointment_confirmation": "کیا آپ واقعی اس اپوائنٹمنٹ کو منسوخ کرنا چاہتے ہیں؟",
+    "yes": "ہاں",
+    "no": "نہیں"
 
   }
   

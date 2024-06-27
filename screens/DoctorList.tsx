@@ -1,5 +1,5 @@
 // DoctorList.js
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, TextInput, Alert } from 'react-native';
 import { Image } from 'expo-image';
 import { FontAwesome } from '@expo/vector-icons';
@@ -15,16 +15,15 @@ import { rootNavigation } from '../components/RootNavigation';
 import { useFocusEffect } from '@react-navigation/native';
 import { useMicrophone } from '../context/MicrophoneProvider';
 
-
 type Props = NativeStackScreenProps<LandingStackParams, 'DoctorList'>
-
 
 const DoctorList: React.FC<Props> = ({route, navigation}) => {
   const language = useSelector((state: RootState) => state.language.locale);
   const adjustmentFactor = useSelector((state: RootState) => state.size.adjustmentFactor);
   const theme = useTheme()
-  const { microphoneResult } = useMicrophone();
+  const { microphoneResult, setMicrophoneResult } = useMicrophone();
   const microphoneResultRef = useRef<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const steps = ['Step 1', 'Step 2', 'Step 3'];
   const currentStep = 2;
@@ -47,19 +46,20 @@ const DoctorList: React.FC<Props> = ({route, navigation}) => {
     if (microphoneResultRef.current) {
       handleVoiceCommand(microphoneResultRef.current);
       console.log('Microphone Result:', microphoneResultRef.current);
+      setMicrophoneResult('')
     }
-  }, [microphoneResult]);
+  }, [microphoneResult, setMicrophoneResult]);
 
   const handleVoiceCommand = (command: string | null) => {
     if (!command) return;
 
     command = command.toLowerCase();
 
-    if (command.includes('home || main page')) {
+    if (command.includes('home') || command.includes("main page")) {
       rootNavigation('Home');
-    } else if (command.includes('setting' || 'settings')) {
+    } else if (command.includes('setting') || command.includes('settings')) {
       rootNavigation('Settings');
-    } else if (command.includes('upcoming appointments' || 'my appointments')) {
+    } else if (command.includes('upcoming appointments') || command.includes('my appointments')) {
       rootNavigation('MyAppointments');
     } else {
         const matchedDoctor = filteredDoctors.find(doctor => {
@@ -76,7 +76,8 @@ const DoctorList: React.FC<Props> = ({route, navigation}) => {
   };
 
   const { category } = route.params
-  const filteredDoctors = language == 'en'? doctorsListEN.filter(doctor => doctor.specialty === category) : doctorsListUR.filter(doctor => doctor.specialty === category)
+  const doctorsList = language === 'en' ? doctorsListEN : doctorsListUR;
+  const filteredDoctors = doctorsList.filter(doctor => doctor.specialty === category && doctor.name.toLowerCase().includes(searchQuery.toLowerCase()));
 
   const handleDoctorSelect = (doc : Doctor) => {
     navigation.navigate('Appointment', { doctor: doc })
@@ -84,9 +85,14 @@ const DoctorList: React.FC<Props> = ({route, navigation}) => {
 
   return (
     <View style={[styles.container, {backgroundColor: theme.background}]}>
+
+      <Text style={[styles.text, {fontSize: 22 + adjustmentFactor}]}>{i18n.t("search_doctor")}</Text>
+
       <TextInput
-        style={[styles.searchBar, {fontSize: 12 + adjustmentFactor, backgroundColor: theme.card}]}
+        style={[styles.searchBar, { fontSize: 13 + adjustmentFactor, backgroundColor: theme.card }]}
         placeholder={`${i18n.t("search_doctor")}...`}
+        value={searchQuery}
+        onChangeText={setSearchQuery}
       />
       <Text style={[styles.text, {fontSize: 22 + adjustmentFactor}]}>{i18n.t('select_doctor')}</Text>
 
@@ -139,7 +145,7 @@ const styles = StyleSheet.create({
   text: {
     fontSize: 20,
     fontWeight: 'bold',
-    marginBottom: 20,
+    marginBottom: 10,
   },
   doctorsContainer: {
     paddingBottom: 60, // Space for the step indicator

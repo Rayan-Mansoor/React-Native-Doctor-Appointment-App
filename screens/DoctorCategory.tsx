@@ -18,7 +18,7 @@ const DoctorCategory: React.FC<Props> = ({navigation}) => {
   const language = useSelector((state: RootState) => state.language.locale);
   const adjustmentFactor = useSelector((state: RootState) => state.size.adjustmentFactor);
   const theme = useTheme()
-  const { microphoneResult } = useMicrophone();
+  const { microphoneResult, setMicrophoneResult } = useMicrophone();
   const microphoneResultRef = useRef<string | null>(null);
 
   const steps = ['Step 1', 'Step 2', 'Step 3'];
@@ -42,19 +42,20 @@ const DoctorCategory: React.FC<Props> = ({navigation}) => {
     if (microphoneResultRef.current) {
       handleVoiceCommand(microphoneResultRef.current);
       console.log('Microphone Result:', microphoneResultRef.current);
+      setMicrophoneResult('')
     }
-  }, [microphoneResult]);
+  }, [microphoneResult, setMicrophoneResult]);
 
   const handleVoiceCommand = (command: string | null) => {
     if (!command) return;
 
     command = command.toLowerCase();
 
-    if (command.includes('home || main page')) {
+    if (command.includes('home') || command.includes('main page')) {
       rootNavigation('Home');
-    } else if (command.includes('setting' || 'settings')) {
+    } else if (command.includes('setting') || command.includes('settings')) {
       rootNavigation('Settings');
-    } else if (command.includes('upcoming appointments' || 'my appointments')) {
+    } else if (command.includes('upcoming appointments') || command.includes('my appointments')) {
       rootNavigation('MyAppointments');
     } else if (command.includes('book appointment')) {
       navigation.navigate('DoctorCategory');

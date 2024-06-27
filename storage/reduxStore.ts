@@ -3,6 +3,8 @@ import { persistReducer, persistStore, FLUSH, PAUSE, PERSIST, PURGE, REGISTER, R
 import { reduxStorage } from "./mmkvStorage";
 import i18n from "../localization/i18n"; 
 import { Doctor } from "./data/en_doctor_list";
+import { v4 as uuidv4 } from 'uuid';
+
 
 type UserState = {
   name: string;
@@ -88,6 +90,7 @@ const themeSlice = createSlice({
 });
 
 export interface Appointment {
+  id: string;
   doctor: Doctor;
   dateTime: string;
 }
@@ -105,12 +108,24 @@ const appointmentsSlice = createSlice({
   initialState: initialAppointmentState,
   reducers: {
     addAppointment: (state, action: PayloadAction<Appointment>) => {
-      state.upcomingAppointments.push(action.payload);
+      const appointment = action.payload;
+      if (!appointment.id) {
+        appointment.id = uuidv4();
+      }
+      state.upcomingAppointments.push(appointment);
     },
     removeAppointment: (state, action: PayloadAction<string>) => {
       state.upcomingAppointments = state.upcomingAppointments.filter(
-        (appointment, index) => appointment.dateTime !== action.payload
+        (appointment) => appointment.id !== action.payload
       );
+    },
+    updateAppointment: (state, action: PayloadAction<Appointment>) => {
+      const index = state.upcomingAppointments.findIndex(
+        (appointment) => appointment.id === action.payload.id
+      );
+      if (index !== -1) {
+        state.upcomingAppointments[index] = action.payload;
+      }
     },
   },
 });
@@ -167,7 +182,7 @@ export type RootState = ReturnType<typeof store.getState>;
 export const { setLanguage } = languageSlice.actions;
 export const { setAdjustmentFactor } = sizeAdjustmentSlice.actions;
 export const { setTheme } = themeSlice.actions;
-export const { addAppointment, removeAppointment } = appointmentsSlice.actions;
+export const { addAppointment, removeAppointment, updateAppointment } = appointmentsSlice.actions;
 export const { setName, setEmail, setPhone } = userSlice.actions;
 
 export const persistor = persistStore(store);
