@@ -1,0 +1,6 @@
+{
+    "name": "modify-volume-rocker",
+    "version": "1.0.0",
+    "description": "Modify MainActivity.kt in project to override the volume rocker",
+    "main": "index.js"
+  }

@@ -1,4 +1,8 @@
+const { withMainActivity } = require("@expo/config-plugins");
 
+module.exports = function withMainActivityKeyEventPlugin(config) {
+  return withMainActivity(config, (config) => {
+    const newMainActivityContent = `
       package com.rayanmansoor.DoctorAppointmentApp
 
       import android.os.Build
@@ -75,4 +79,14 @@
             // because it's doing more than [Activity.moveTaskToBack] in fact.
             super.invokeDefaultOnBackPressed()
         }
-      }
+      }`;
+
+    return {
+      ...config,
+      modResults: {
+        ...config.modResults,
+        contents: newMainActivityContent,
+      },
+    };
+  });
+};
