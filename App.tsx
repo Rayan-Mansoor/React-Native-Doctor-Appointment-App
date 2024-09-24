@@ -27,6 +27,7 @@ import { navigationRef } from './components/RootNavigation';
 import 'react-native-get-random-values'
 import { LogBox } from 'react-native';
 import { TensorFlowProvider } from './context/TFModelProvider';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 const HEALTH_TIP_NOTIFICATION_TASK = 'health-tip-notification';
 
@@ -109,7 +110,9 @@ export default function App() {
         <MicrophoneProvider>
           <ThemeProvider>
             <TooltipProvider>
-              <MainApp />
+              <GestureHandlerRootView>
+                <MainApp />
+              </GestureHandlerRootView>
             </TooltipProvider>
           </ThemeProvider>
         </MicrophoneProvider>

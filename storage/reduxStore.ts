@@ -130,6 +130,29 @@ const appointmentsSlice = createSlice({
   },
 });
 
+type ComponentOrderState = {
+  [screenName: string]: string[]; // screenName maps to an array of component names
+};
+
+const initialComponentOrderState: ComponentOrderState = {
+  homeScreen: ['HealthTipComponent', 'UpcomingAppointmentsComponent', 'FeaturedDoctorsComponent'],
+};
+
+const componentOrderSlice = createSlice({
+  name: 'componentOrder',
+  initialState: initialComponentOrderState,
+  reducers: {
+    setComponentOrder: (state, action) => {
+      const { screenName, data } = action.payload;
+      state[screenName] = data;
+    },
+    resetComponentOrder: (state, action) => {
+      const { screenName } = action.payload;
+      state[screenName] = initialComponentOrderState[screenName];
+    },
+  },
+});
+
 const userPersistConfig = {
   key: 'user',
   storage: reduxStorage,
@@ -155,11 +178,17 @@ const appointmentPersistConfig = {
   storage: reduxStorage,
 };
 
+const componentOrderPersistConfig = {
+  key: 'componentOrder',
+  storage: reduxStorage,
+};
+
 const persistedUser = persistReducer(userPersistConfig, userSlice.reducer);
 const persistedLanguage = persistReducer(languagePersistConfig, languageSlice.reducer);
 const persistedSize = persistReducer(sizePersistConfig, sizeAdjustmentSlice.reducer);
 const persistedTheme = persistReducer(themePersistConfig, themeSlice.reducer);
 const persistedAppointments = persistReducer(appointmentPersistConfig, appointmentsSlice.reducer);
+const persistedComponentOrder = persistReducer(componentOrderPersistConfig, componentOrderSlice.reducer);
 
 const store = configureStore({
   reducer: {
@@ -167,7 +196,8 @@ const store = configureStore({
     size: persistedSize,
     theme: persistedTheme,
     appointments: persistedAppointments,
-    user: persistedUser
+    user: persistedUser,
+    componentOrder: persistedComponentOrder
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
@@ -184,6 +214,7 @@ export const { setAdjustmentFactor } = sizeAdjustmentSlice.actions;
 export const { setTheme } = themeSlice.actions;
 export const { addAppointment, removeAppointment, updateAppointment } = appointmentsSlice.actions;
 export const { setName, setEmail, setPhone } = userSlice.actions;
+export const { setComponentOrder, resetComponentOrder } = componentOrderSlice.actions;
 
 export const persistor = persistStore(store);
 export default store;

@@ -45,6 +45,7 @@
     "appointment_updated_to": "Appointment updated To ",
     "cancel_appointment" : "Cancel Appointment",
     "cancel_appointment_confirmation": "Are you sure you want to cancel this appointment?",
+    "appointment_timing": "You've chosen an appointment on",
     "yes": "Yes",
     "no": "No"
   }

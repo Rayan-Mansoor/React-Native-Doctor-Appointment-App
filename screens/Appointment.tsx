@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, Image, ScrollView, Modal, Alert, Pressable } from 'react-native';
+import { View, Text, StyleSheet, Image, ScrollView, Modal, Alert, Pressable, Button } from 'react-native';
 import { FontAwesome, AntDesign } from '@expo/vector-icons';
 import { Calendar } from 'react-native-calendars';
 import { useTheme } from '../context/ThemeProvider';
@@ -85,66 +85,20 @@ const Appointment: React.FC<Props> = ({navigation, route}) => {
       case "navigate_setting":
         rootNavigation('Settings');
         break;
-      case "select_appointment":
-        rootNavigation('Settings');
+      case "confirm_appointment":
+        confirmAppointment();
+        break;
+      case "select_date":
+        selectDateProgrammatically('2024-08-28');
+        break;
+      case "select_time":
+        selectTimeProgrammatically(14, 30);
         break;
       default:
         console.log('Command not recognized.');
         break;
     }
   };
-
-  // const handleVoiceCommand = (command: string | null) => {
-  //   if (!command) return;
-
-  //   command = command.toLowerCase();
-
-  //   if (command.includes('home') || command.includes('main page')) {
-  //     rootNavigation('Home');
-  //   } else if (command.includes('setting') || command.includes('settings')) {
-  //     rootNavigation('Settings');
-  //   } else if (command.includes('upcoming appointments') || command.includes('my appointments')) {
-  //     rootNavigation('MyAppointments');
-  //     // all the tasks the user can perform on this page should have a corresponding voice command
-  //   // } else if (command.includes('select date')) {
-  //   //   const datePattern = /\d{4}-\d{2}-\d{2}/;
-  //   //   let match = command.match(datePattern);
-  
-  //   //   if (!match) {
-  //   //     try {
-  //   //       const parsedDate = parse(command.replace('select date', '').trim(), 'MMMM d yyyy', new Date());
-  //   //       const formattedDate = format(parsedDate, 'yyyy-MM-dd');
-  //   //       match = [formattedDate];
-  //   //     } catch (error) {
-  //   //       console.log('Error parsing date:', error);
-  //   //     }
-  //   //   }
-  
-  //   //   if (match) {
-  //   //     handleDaySelect({ dateString: match[0], day: 0, month: 0, year: 0, timestamp: 0 });
-  //   //   } else {
-  //   //     console.log('Date not recognized in the command.');
-  //   //   }
-  //   // } else if (command.includes('select time')) {
-  //   //   const timePattern = /(\d{1,2}):(\d{2})\s*(am|pm)/;
-  //   //   const match = command.match(timePattern);
-  //   //   if (match) {
-  //   //     const hours = parseInt(match[1], 10);
-  //   //     const minutes = parseInt(match[2], 10);
-  //   //     const period = match[3].toLowerCase();
-  //   //     const adjustedHours = period === 'pm' && hours < 12 ? hours + 12 : hours === 12 && period === 'am' ? 0 : hours;
-  //   //     const time = new Date();
-  //   //     time.setHours(adjustedHours);
-  //   //     time.setMinutes(minutes);
-  //   //     handleTimeSelected({ type: 'set', nativeEvent: {
-  //   //       timestamp: 0,
-  //   //       utcOffset: 0
-  //   //     } }, time);
-  //   //   }
-  //   // } else {
-  //     console.log('Command not recognized.');
-  //   }
-  // };
 
   const theme = useTheme();
   const dispatch = useDispatch()
@@ -156,13 +110,6 @@ const Appointment: React.FC<Props> = ({navigation, route}) => {
   
   const [markedDates, setMarkedDates] = useState<MarkedDates>(markedDatesWithDisabled);
 
-  const confirmAppointment = () => {
-    const appointmentDateTime = constructDateTime(selectedDate!!,selectedTime)
-    const appointmentID = uuidv4()
-    dispatch(addAppointment({id: appointmentID, doctor, dateTime: appointmentDateTime.toISOString()}));
-    Alert.alert(i18n.t("appointment_confirmed"), `${i18n.t("appointment_scheduled_at")} ${formatDate(appointmentDateTime)}`, [{text: 'OK', onPress: handleAlertOkPress}]);
-  };
-
   const constructDateTime = (dateString: string, time: Date): Date => {
     const [year, month, day] = dateString.split('-').map(Number);
   
@@ -172,11 +119,29 @@ const Appointment: React.FC<Props> = ({navigation, route}) => {
   
     return new Date(year, month - 1, day, hours, minutes, seconds);
   }
+
+  const formatAppointmentDateTime = (date: string | null, time: Date | null): string | null => {
+    if (!date || !time) return null;
   
+    const appointmentDate = new Date(date);
+    const formattedDate = appointmentDate.toLocaleDateString('en-GB', { 
+      day: '2-digit', 
+      month: '2-digit', 
+      year: '2-digit' 
+    });
+  
+    const formattedTime = time.toLocaleTimeString('en-US', { 
+      hour: 'numeric', 
+      minute: '2-digit', 
+      hour12: true 
+    });
+  
+    return `${i18n.t("appointment_timing")} ${formattedTime} ${formattedDate}`;
+  };
 
-  const handleDaySelect = (day: DateObject) => {
-    const date = day.dateString;
-
+  const handleDaySelect = (day: DateObject | string) => {
+    const date = typeof day === 'string' ? day : day.dateString;
+  
     if (markedDates[date] && !markedDates[date].disabled) {
       setSelectedDate(date);
       setMarkedDates({
@@ -187,32 +152,59 @@ const Appointment: React.FC<Props> = ({navigation, route}) => {
     }
   };
 
-  const handleTimeSelected = (event: DateTimePickerEvent, selectedTime1: Date | undefined) => {
+
+  const selectDateProgrammatically = (dateString: string) => {
+    const dayObject = {
+      dateString: dateString,
+      day: parseInt(dateString.split('-')[2]),
+      month: parseInt(dateString.split('-')[1]),
+      year: parseInt(dateString.split('-')[0]),
+      timestamp: new Date(dateString).getTime()
+    };
+  
+    handleDaySelect(dayObject);
+  };
+
+  const handleTimeSelected = (event: DateTimePickerEvent | null, selectedTime1?: Date) => {
     const currentTime = selectedTime1 || selectedTime;
     setSelectedTime(currentTime);
-
-    if (event.type === 'set') {
-      const hours = currentTime.getHours();
-      const minutes = currentTime.getMinutes();
-
-      if (hours >= 8 && hours < 18) {
-        const timeString = `${hours}:${minutes < 10 ? '0' : ''}${minutes}`;
-        setTimeModalVisible(false)
-
-        setCompleteDate(timeString);
-      } else {
-        Alert.alert(i18n.t("invalid_time"), `${i18n.t("please_select_time")}`);
-        Alert.alert('Invalid Time', 'Please select a time between 8 AM and 6 PM.');
-        setTimeModalVisible(false)
-      }
-    }
-    else if (event.type === 'dismissed') {
-      setTimeModalVisible(false)
-    }
-    else if (event.type === 'neutralButtonPressed') {
-      setTimeModalVisible(false)
+  
+    const hours = currentTime.getHours();
+    const minutes = currentTime.getMinutes();
+  
+    if (hours >= 8 && hours < 18) {
+      const timeString = `${hours}:${minutes < 10 ? '0' : ''}${minutes}`;
+      setTimeModalVisible(false);
+      setCompleteDate(timeString);
+    } else {
+      Alert.alert(i18n.t("invalid_time"), `${i18n.t("please_select_time")}`);
+      setTimeModalVisible(false);
     }
   };
+
+  const selectTimeProgrammatically = (hours: number, minutes: number) => {
+    const newDate = new Date(selectedTime);
+    newDate.setHours(hours, minutes, 0, 0);
+  
+    // Create a mock event object
+    const mockEvent: DateTimePickerEvent = {
+      type: 'set',
+      nativeEvent: {
+        timestamp: newDate.getTime(),
+        utcOffset: 0
+      },
+    };
+  
+    // Call handleTimeSelected with the mock event and new date
+    handleTimeSelected(mockEvent, newDate);
+  };
+
+  const confirmAppointment = () => {
+    const appointmentDateTime = constructDateTime(selectedDate!!,selectedTime)
+    const appointmentID = uuidv4()
+    dispatch(addAppointment({id: appointmentID, doctor, dateTime: appointmentDateTime.toISOString()}));
+    Alert.alert(i18n.t("appointment_confirmed"), `${i18n.t("appointment_scheduled_at")} ${formatDate(appointmentDateTime)}`, [{text: 'OK', onPress: handleAlertOkPress}]);
+};
 
   return (
     <ScrollView style={[styles.container, {backgroundColor: theme.background}]}>
@@ -237,7 +229,6 @@ const Appointment: React.FC<Props> = ({navigation, route}) => {
           <Text style={{fontSize: 12 + adjustmentFactor, color: theme.secondaryText}}>{i18n.t("rating")}</Text>
         </View>
       </View>
-
 
       <Text style={[styles.sectionHeader, {fontSize: 20 + adjustmentFactor}]}>{i18n.t("about_doctor")}</Text>
       <Text style={[styles.aboutText, {fontSize: 16 + adjustmentFactor, color: theme.secondaryText}]}>{doctor.about}</Text>
@@ -282,6 +273,10 @@ const Appointment: React.FC<Props> = ({navigation, route}) => {
           }}
         />
       </View>
+
+      {completeDate &&       
+        <Text style={{fontSize: 16 + adjustmentFactor, color: theme.secondaryText}}>{formatAppointmentDateTime(selectedDate, selectedTime)}</Text>    
+      }
 
       <Pressable onPress={confirmAppointment} disabled={!completeDate}>
         {({ pressed }) => (

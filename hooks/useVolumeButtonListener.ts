@@ -41,7 +41,9 @@ const useVolumeButtonListener = () => {
           PermissionsAndroid.PERMISSIONS.RECORD_AUDIO
         );
         if (voicePermissionReq === PermissionsAndroid.RESULTS.GRANTED) {
-            Voice.start('en-US');
+          Voice.start('en-US', {
+            EXTRA_PREFER_OFFLINE: true
+          });
             setIsListening(true)
         } else {
           console.log("Microphone permission denied");
