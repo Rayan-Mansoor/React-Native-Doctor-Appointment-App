@@ -114,7 +114,7 @@ const DoctorList: React.FC<Props> = ({route, navigation}) => {
           <View key={doctor.id} style={[styles.doctorCard, {backgroundColor: theme.card}]}>
             <Image source={doctor.image} style={styles.doctorImage} />
             <View style={styles.doctorInfo}>
-              <Text style={[styles.doctorName, {fontSize: 18 + adjustmentFactor}]}>{doctor.name}</Text>
+              <Text style={[styles.doctorName, {fontSize: 18 + adjustmentFactor}]}>{i18n.t('doctor')} {doctor.name}</Text>
               <Text style={[styles.doctorSpecialty, {fontSize: 14 + adjustmentFactor}]}>{i18n.t(doctor.specialty.toLowerCase())}, {doctor.location}</Text>
               <View style={styles.rating}>
                 <FontAwesome name="star" size={14 + adjustmentFactor} color={theme.rating}/>

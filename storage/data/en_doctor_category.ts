@@ -5,14 +5,12 @@ interface Category {
 
 
 const doctorCategories : Category[] = [
-    { title: 'Cardiology', image: require('../../assets/images/category/Cardiology.png') },
-    { title: 'Nephrology', image: require('../../assets/images/category/Nephrology.png') },
-    { title: 'Neurology', image: require('../../assets/images/category/Neurology.png') },
-    { title: 'Dermatology', image: require('../../assets/images/category/Dermatology.png') },
-    { title: 'Orthopedics', image: require('../../assets/images/category/Orthopedics.png') },
-    { title: 'Gastroenterology', image: require('../../assets/images/category/Gastroenterology.png') },
-    { title: 'Pulmonology', image: require('../../assets/images/category/Pulmonology.png') },
-    { title: 'Ophthalmology', image: require('../../assets/images/category/Ophthalmology.png') },
+    { title: 'Orthodontics', image: require('../../assets/images/category/Orthodontics.png') },
+    { title: 'Prosthodontics', image: require('../../assets/images/category/Prosthodontics.png') },
+    { title: 'Endodontics', image: require('../../assets/images/category/Endodontics.png') },
+    { title: 'Periodontics', image: require('../../assets/images/category/Periodontics.png') },
+    { title: 'Pedodontics', image: require('../../assets/images/category/Pedodontics.png') },
+    { title: 'Oral Surgery', image: require('../../assets/images/category/Oral Surgery.png') }
   ];
 
 export default doctorCategories;

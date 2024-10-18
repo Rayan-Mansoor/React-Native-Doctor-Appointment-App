@@ -159,7 +159,7 @@ const UpcomingAppointments: React.FC = () => {
     <View style={[styles.appointmentCard, { backgroundColor: theme.card }]}>
       <Image source={item.doctor.image} style={styles.doctorImage} />
       <View style={styles.textContainer}>
-        <Text style={[styles.doctorName, { fontSize: 18 + adjustmentFactor }]}>{item.doctor.name}</Text>
+        <Text style={[styles.doctorName, { fontSize: 18 + adjustmentFactor }]}>{i18n.t('doctor')} {item.doctor.name}</Text>
         <Text style={[styles.doctorSpecialty, { fontSize: 16 + adjustmentFactor }]}>{i18n.t(item.doctor.specialty.toLowerCase())}</Text>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
           <Text style={[styles.appointmentDateTime, { fontSize: 14 + adjustmentFactor }]}>{new Date(item.dateTime).toLocaleString()}</Text>

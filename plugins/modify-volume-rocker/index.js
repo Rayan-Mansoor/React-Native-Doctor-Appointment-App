@@ -3,7 +3,7 @@ const { withMainActivity } = require("@expo/config-plugins");
 module.exports = function withMainActivityKeyEventPlugin(config) {
   return withMainActivity(config, (config) => {
     const newMainActivityContent = `
-      package com.rayanmansoor.DoctorAppointmentApp
+      package com.rayanmansoor.DentistAppointmentApp
 
       import android.os.Build
       import android.os.Bundle

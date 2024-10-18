@@ -65,29 +65,23 @@ const DoctorCategory: React.FC<Props> = ({navigation}) => {
       case "navigate_setting":
         rootNavigation('Settings');
         break;
-      case "select_cardiology":
-        handleCardPress('Cardiology')
+      case "select_orthodontics":
+        handleCardPress('Orthodontics')
         break;
-      case "select_nephrology":
-        handleCardPress('Nephrology')
+      case "select_prosthodontics":
+        handleCardPress('Prosthodontics')
         break;
-      case "select_neurology":
-        handleCardPress('Neurology')
+      case "select_endodontics":
+        handleCardPress('Endodontics')
         break;
-      case "select_dermatology":
-        handleCardPress('Dermatology')
+      case "select_periodontics":
+        handleCardPress('Periodontics')
           break;
-      case "select_ophthalmology":
-        handleCardPress('Ophthalmology')
+      case "select_pedodontics":
+        handleCardPress('Pedodontics')
         break;
-      case "select_gastroenterology":
-        handleCardPress('Gastroenterology')
-        break;
-      case "select_orthopedics":
-        handleCardPress('Orthopedics')
-        break;
-      case "select_pulmonology":
-        handleCardPress('Pulmonology')
+      case "select_oral_surgery":
+        handleCardPress('Oral Surgery')
         break;
 
       default:

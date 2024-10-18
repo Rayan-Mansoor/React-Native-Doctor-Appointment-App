@@ -209,7 +209,7 @@ const Appointment: React.FC<Props> = ({navigation, route}) => {
   return (
     <ScrollView style={[styles.container, {backgroundColor: theme.background}]}>
       <Image source={doctor.image} style={styles.doctorImage} />
-      <Text style={[styles.doctorName, {fontSize: 22 + adjustmentFactor}]}>{doctor.name}</Text>
+      <Text style={[styles.doctorName, {fontSize: 22 + adjustmentFactor}]}>{i18n.t('doctor')} {doctor.name}</Text>
       <View style={styles.doctorSpecialty}>
         <FontAwesome name="stethoscope" size={14 + adjustmentFactor} color="gray" />
         <Text style={[styles.specialtyText, {fontSize: 16 + adjustmentFactor, color: theme.secondaryText}]}>{i18n.t(doctor.specialty.toLowerCase())}</Text>

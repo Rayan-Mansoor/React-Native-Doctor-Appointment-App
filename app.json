@@ -1,13 +1,13 @@
 {
   "expo": {
-    "name": "Velora",
-    "slug": "Velora",
+    "name": "Cavixo",
+    "slug": "Cavixo",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/logo.png",
+    "icon": "./assets/images/logo.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/splash.png",
+      "image": "./assets/images/splash.png",
       "resizeMode": "cover",
       "backgroundColor": "#ffffff"
     },
@@ -16,23 +16,24 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/logo.png",
+        "foregroundImage": "./assets/images/logo.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.rayanmansoor.DoctorAppointmentApp"
+      "package": "com.rayanmansoor.DentistAppointmentApp"
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
       "expo-localization",
       "expo-font",
       "./plugins/modify-volume-rocker",
-      "expo-asset"
+      "expo-asset",
+      "react-native-fast-tflite"
     ],
     "extra": {
       "eas": {
-        "projectId": "b1f6952c-2789-493d-a706-bf957e37c8c2"
+        "projectId": "abf7d2f4-06e6-46bd-bd7e-b08dc1d8ad22"
       }
     }
   }

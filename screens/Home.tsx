@@ -100,8 +100,7 @@ const Home: React.FC<Props> = ({navigation}) => {
         break;
       case "select_doctor":
         const matchedDoctor = featuredDoctors.find(doctor => {
-          const doctorNameNormalized = doctor.name.toLowerCase().replace('dr. ', '');
-          return command!!.includes(doctorNameNormalized);
+          return command!!.includes(doctor.name.toLowerCase());
         });
   
         if (matchedDoctor) {
@@ -176,7 +175,7 @@ const Home: React.FC<Props> = ({navigation}) => {
         {featuredDoctors.map((doctor, index) => (
           <TouchableOpacity key={index} style={[styles.doctorCard, {backgroundColor: theme.card, elevation: disabled ? 0 : 5}]} onPress={() => handlefeaturedDoctor(doctor)} onLongPress={handleLongPress("A top rated doctor")}>
             <Image source={doctor.image} style={styles.doctorImage} />
-            <Text style={[styles.doctorName, {fontSize: 16 + adjustmentFactor}]}>{doctor.name}</Text>
+            <Text style={[styles.doctorName, {fontSize: 16 + adjustmentFactor}]}>{i18n.t('doctor')} {doctor.name}</Text>
             <Text style={[styles.doctorSpecialty, {fontSize: 14 + adjustmentFactor}]}>{i18n.t(doctor.specialty.toLowerCase())}</Text>
             <View style={styles.ratingContainer}>
               <FontAwesome name="star" size={14 + adjustmentFactor} color={theme.rating} />

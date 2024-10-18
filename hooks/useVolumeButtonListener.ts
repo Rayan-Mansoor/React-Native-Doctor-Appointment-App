@@ -3,6 +3,7 @@ import { NativeEventEmitter, PermissionsAndroid, Platform } from 'react-native';
 import { useMicrophone } from '../context/MicrophoneProvider';
 import KeyEvent from 'react-native-keyevent';
 import Voice from '@react-native-voice/voice';
+import i18n from '../localization/i18n';
 
 const useVolumeButtonListener = () => {
   const { setMicrophoneResult, setIsListening } = useMicrophone();
@@ -41,7 +42,8 @@ const useVolumeButtonListener = () => {
           PermissionsAndroid.PERMISSIONS.RECORD_AUDIO
         );
         if (voicePermissionReq === PermissionsAndroid.RESULTS.GRANTED) {
-          Voice.start('en-US', {
+          const voiceLang = i18n.locale == 'en' ? 'en-US' : 'ur-PK'
+          Voice.start(voiceLang, {
             EXTRA_PREFER_OFFLINE: true
           });
             setIsListening(true)
