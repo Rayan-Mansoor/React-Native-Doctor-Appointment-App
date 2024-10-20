@@ -12,9 +12,10 @@ import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/dat
 import i18n from '../localization/i18n';
 import { useMicrophone } from '../context/MicrophoneProvider';
 import { rootNavigation } from '../components/RootNavigation';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useIsFocused } from '@react-navigation/native';
 import { v4 as uuidv4 } from 'uuid';
 import { useTensorFlow } from '../context/TFModelProvider';
+import { useVoiceCommand, VoiceCommandContextProps } from '../context/VoiceCommandProvider';
 
 interface MarkedDates {
   [key: string]: {
@@ -36,55 +37,32 @@ const Appointment: React.FC<Props> = ({navigation, route}) => {
   const [timeModalVisible, setTimeModalVisible] = useState(false);
   const [completeDate, setCompleteDate] = useState('');
   
-  const { microphoneResult, setMicrophoneResult } = useMicrophone();
-  const { classifyIntent } = useTensorFlow();
+  const passdownData = useVoiceCommand();
+  const isFocused = useIsFocused();
 
-  const microphoneResultRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (isFocused && passdownData.prediction) {
+      console.log("Appointment with passdown data:", passdownData);
+      handleVoiceCommand(passdownData.sentence, passdownData.prediction).then(() => {
+        passdownData.commandCompleted();
+      })
+      passdownData.resetContextValue();
+    }
+  }, [passdownData, isFocused]);
   
   const { doctor } = route.params
-  
-  useFocusEffect(
-    React.useCallback(() => {
-      microphoneResultRef.current = microphoneResult;
 
-      return () => {
-        microphoneResultRef.current = null;
-      };
-    }, [microphoneResult])
-  );
 
   useEffect(() => {
     i18n.locale = language;
   }, [language]);
 
-  useEffect(() => {
-    if (microphoneResultRef.current) {
-      handleVoiceCommand(microphoneResultRef.current);
-      console.log('Microphone Result:', microphoneResultRef.current);
-      setMicrophoneResult('')
-    }
-  }, [microphoneResult, setMicrophoneResult]);
-
   const handleAlertOkPress = () => { 
     navigation.replace("Home")
    }
 
-   const handleVoiceCommand = async (command: string | null) => {
-    if (!command) return;
-
-    const prediction = await classifyIntent(command)
-    console.log(`Predicted Intent: ${prediction}`)
-
+   const handleVoiceCommand = async (command: string, prediction: string) => {
     switch (prediction) {
-      case "navigate_home":
-        rootNavigation('Home')
-        break;
-      case "navigate_appointments":
-        rootNavigation('MyAppointments')
-        break;
-      case "navigate_setting":
-        rootNavigation('Settings');
-        break;
       case "confirm_appointment":
         confirmAppointment();
         break;

@@ -49,6 +49,12 @@ const sizeAdjustmentSlice = createSlice({
     setAdjustmentFactor: (state, action: PayloadAction<number>) => {
       state.adjustmentFactor = action.payload;
     },
+    incrementAdjustmentFactor: (state) => {
+      state.adjustmentFactor += 2
+    },
+    decrementAdjustmentFactor: (state) => {
+      state.adjustmentFactor -= 2
+    }
   },
 });
 
@@ -72,19 +78,25 @@ const languageSlice = createSlice({
 });
 
 type ThemeState = {
-  theme: 'normal' | 'protanopia' | 'deuteranopia' | 'tritanopia';
+  isColorBlindMode: boolean,
+  colorBlindTheme: 'protanopia' | 'deuteranopia' | 'tritanopia';
 }
 
 const initialThemeState = {
-  theme: 'normal',
+  isColorBlindMode: false,
+  colorBlindTheme: 'deuteranopia',
 } as ThemeState;
 
 const themeSlice = createSlice({
   name: 'theme',
   initialState: initialThemeState,
   reducers: {
-    setTheme: (state, action) => {
-      state.theme = action.payload;
+    toggleColorBlindMode: (state, action) => {
+      state.isColorBlindMode = action.payload;
+    },
+    setColorBlindTheme: (state, action) => {
+      state.colorBlindTheme = action.payload;
+      state.isColorBlindMode = true;
     },
   },
 });
@@ -210,8 +222,8 @@ const store = configureStore({
 export type RootState = ReturnType<typeof store.getState>;
 
 export const { setLanguage } = languageSlice.actions;
-export const { setAdjustmentFactor } = sizeAdjustmentSlice.actions;
-export const { setTheme } = themeSlice.actions;
+export const { setAdjustmentFactor, incrementAdjustmentFactor, decrementAdjustmentFactor } = sizeAdjustmentSlice.actions;
+export const { toggleColorBlindMode, setColorBlindTheme } = themeSlice.actions;
 export const { addAppointment, removeAppointment, updateAppointment } = appointmentsSlice.actions;
 export const { setName, setEmail, setPhone } = userSlice.actions;
 export const { setComponentOrder, resetComponentOrder } = componentOrderSlice.actions;

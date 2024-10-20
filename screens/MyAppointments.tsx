@@ -10,20 +10,32 @@ import doctorsListUR from '../storage/data/ur_doctor_list';
 import { useTheme } from '../context/ThemeProvider';
 import { useMicrophone } from '../context/MicrophoneProvider';
 import { rootNavigation } from '../components/RootNavigation';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useIsFocused } from '@react-navigation/native';
 import { Calendar } from 'react-native-calendars';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
-import { DateObject } from '../utils/utilityFunctions';
+import { DateObject, matchPersonName } from '../utils/utilityFunctions';
 import { format } from 'date-fns';
 import { useTensorFlow } from '../context/TFModelProvider';
+import { useVoiceCommand, VoiceCommandContextProps } from '../context/VoiceCommandProvider';
+import { extractPersonNames } from '../network/api';
 
 const UpcomingAppointments: React.FC = () => {
   const language = useSelector((state: RootState) => state.language.locale);
   const upcomingAppointments = useSelector((state: RootState) => state.appointments.upcomingAppointments);
   const adjustmentFactor = useSelector((state: RootState) => state.size.adjustmentFactor);
-  const { microphoneResult, setMicrophoneResult } = useMicrophone();
-  const { classifyIntent } = useTensorFlow();
-  const microphoneResultRef = useRef<string | null>(null);
+  const passdownData = useVoiceCommand();
+  const isFocused = useIsFocused();
+
+
+  useEffect(() => {
+    if (isFocused && passdownData.prediction) {
+      console.log("MyAppointments with passdown data:", passdownData);
+      handleVoiceCommand(passdownData.sentence, passdownData.prediction).then(() => {
+        passdownData.commandCompleted();
+      })
+      passdownData.resetContextValue();
+    }
+  }, [passdownData, isFocused]);
 
   const dispatch = useDispatch();
   const theme = useTheme();
@@ -34,63 +46,55 @@ const UpcomingAppointments: React.FC = () => {
   const [selectedTime, setSelectedTime] = useState(new Date());
   const [timeModalVisible, setTimeModalVisible] = useState(false);
 
-  useFocusEffect(
-    useCallback(() => {
-      microphoneResultRef.current = microphoneResult;
-
-      return () => {
-        microphoneResultRef.current = null;
-      };
-    }, [microphoneResult])
-  );
-
   useEffect(() => {
     i18n.locale = language;
   }, [language]);
 
-  useEffect(() => {
-    if (microphoneResultRef.current) {
-      handleVoiceCommand(microphoneResultRef.current);
-      console.log('Microphone Result:', microphoneResultRef.current);
-      setMicrophoneResult('')
-    }
-  }, [microphoneResult, setMicrophoneResult]);
 
-  const handleVoiceCommand = async (command: string | null) => {
-    if (!command) return;
-
-    const prediction = await classifyIntent(command)
-    console.log(`Predicted Intent: ${prediction}`)
-
+  const handleVoiceCommand = async (command: string, prediction: string) => {
     switch (prediction) {
-      case "navigate_home":
-        rootNavigation('Home')
-        break;
-      case "navigate_setting":
-        rootNavigation('Settings');
-        break;
       case "reschedule_appointment":
-        const doctorToReschedule = command.replace(/(reschedule|doctor|appointment|with|of|checkup|the|dr)/g, '').trim();
-        const appointmentToReschedule = upcomingAppointments.find(
-          (appointment) => appointment.doctor.name.toLowerCase().includes(`dr. ${doctorToReschedule}`)
-        );
-        if (appointmentToReschedule) {
-          handleAppointmentTimings(appointmentToReschedule);
-        } else {
-          console.log('Doctor not found.');
+        const doctorNameToReschedule = await extractPersonNames(command);
+        if (doctorNameToReschedule.length !== 0) {
+          const doctorNamesList = upcomingAppointments.map(appointment => appointment.doctor.name);
+          const matchedDoctorName = matchPersonName(doctorNameToReschedule[0], doctorNamesList);
+      
+          if (matchedDoctorName) {
+            const matchedDoctor = upcomingAppointments.find( appointment =>
+              appointment.doctor.name.toLowerCase() === matchedDoctorName.toLowerCase()
+            );
+            if (matchedDoctor) {
+              handleAppointmentTimings(matchedDoctor);
+            } else {
+              console.log('Doctor not found.');
+            }
+          } else {
+            console.log('No match found.');
+          }
         }
         break;
+
       case "cancel_appointment":
-        const doctorToCancel = command.replace(/(cancel|delete|doctor|appointment|with|of|checkup|the|dr)/g, '').trim();
-        const appointmentToCancel = upcomingAppointments.find(
-          (appointment) => appointment.doctor.name.toLowerCase().includes(`dr. ${doctorToCancel}`)
-        );
-        if (appointmentToCancel) {
-          handleAppointmentCancel(appointmentToCancel);
-        } else {
-          console.log('Doctor not found.');
+        const doctorNameToCancel = await extractPersonNames(command);
+        if (doctorNameToCancel.length !== 0) {
+          const doctorNamesList = upcomingAppointments.map(appointment => appointment.doctor.name);
+          const matchedDoctorName = matchPersonName(doctorNameToCancel[0], doctorNamesList);
+
+          if (matchedDoctorName) {
+            const matchedDoctor = upcomingAppointments.find( appointment =>
+              appointment.doctor.name.toLowerCase() === matchedDoctorName.toLowerCase()
+            );
+            if (matchedDoctor) {
+              handleAppointmentCancel(matchedDoctor);
+            } else {
+              console.log('Doctor not found.');
+            }
+          } else {
+            console.log('No match found.');
+          }
         }
         break;
+
       default:
         console.log('Command not recognized.');
         break;

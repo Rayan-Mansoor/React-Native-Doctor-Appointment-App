@@ -1,7 +1,9 @@
-import React, { createContext, useContext } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '../storage/reduxStore';
 import { NormalTheme, ProtanopiaTheme, DeuteranopiaTheme, TritanopiaTheme, ColorTheme } from '../types/themes';
+
+type AppTheme = "normal" | "protanopia" | "deuteranopia" | "tritanopia";
 
 interface ThemeContextType {
     theme: ColorTheme;
@@ -25,7 +27,16 @@ const themeMap: { [key: string]: ColorTheme } = {
 };
 
 const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const theme = useSelector((state: RootState) => state.theme.theme);
+  const { isColorBlindMode, colorBlindTheme} = useSelector((state: RootState) => state.theme);  
+  const [theme, setTheme] = useState<AppTheme>(colorBlindTheme);
+
+  useEffect(() => {
+    if (isColorBlindMode) {
+      setTheme(colorBlindTheme);
+    } else {
+      setTheme('normal');
+    }
+  }, [isColorBlindMode, colorBlindTheme]);
 
   return (
     <ThemeContext.Provider value={{ theme: themeMap[theme] }}>

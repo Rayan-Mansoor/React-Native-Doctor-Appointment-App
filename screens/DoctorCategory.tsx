@@ -19,77 +19,13 @@ const DoctorCategory: React.FC<Props> = ({navigation}) => {
   const language = useSelector((state: RootState) => state.language.locale);
   const adjustmentFactor = useSelector((state: RootState) => state.size.adjustmentFactor);
   const theme = useTheme()
-  const { microphoneResult, setMicrophoneResult } = useMicrophone();
-  const { classifyIntent } = useTensorFlow();
-
-  const microphoneResultRef = useRef<string | null>(null);
 
   const steps = ['Step 1', 'Step 2', 'Step 3'];
   const currentStep = 1; 
 
-  useFocusEffect(
-    React.useCallback(() => {
-      microphoneResultRef.current = microphoneResult;
-
-      return () => {
-        microphoneResultRef.current = null;
-      };
-    }, [microphoneResult])
-  );
-
   useEffect(() => {
     i18n.locale = language;
   }, [language]);
-
-  useEffect(() => {
-    if (microphoneResultRef.current) {
-      handleVoiceCommand(microphoneResultRef.current);
-      console.log('Microphone Result:', microphoneResultRef.current);
-      setMicrophoneResult('')
-    }
-  }, [microphoneResult, setMicrophoneResult]);
-
-  const handleVoiceCommand = async (command: string | null) => {
-    if (!command) return;
-
-    const prediction = await classifyIntent(command)
-    console.log(`Predicted Intent: ${prediction}`)
-
-    switch (prediction) {
-      case "navigate_home":
-        rootNavigation('Home')
-        break;
-      case "navigate_appointments":
-        rootNavigation('MyAppointments')
-        break;
-      case "navigate_setting":
-        rootNavigation('Settings');
-        break;
-      case "select_orthodontics":
-        handleCardPress('Orthodontics')
-        break;
-      case "select_prosthodontics":
-        handleCardPress('Prosthodontics')
-        break;
-      case "select_endodontics":
-        handleCardPress('Endodontics')
-        break;
-      case "select_periodontics":
-        handleCardPress('Periodontics')
-          break;
-      case "select_pedodontics":
-        handleCardPress('Pedodontics')
-        break;
-      case "select_oral_surgery":
-        handleCardPress('Oral Surgery')
-        break;
-
-      default:
-        console.log('Command not recognized.');
-        break;
-    }
-  };
-
   
   const handleCardPress = (category: string) => { 
     navigation.navigate('DoctorList', { category: category })

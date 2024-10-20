@@ -6,6 +6,8 @@ interface MicrophoneContextProps {
   setMicrophoneResult: (text: string) => void;
   isListening: boolean;
   setIsListening: (listening: boolean) => void;
+  isProcessing: boolean;
+  setIsProcessing: (processing: boolean) => void;
 }
 
 export const MicrophoneContext = createContext<MicrophoneContextProps | undefined>(undefined);
@@ -21,9 +23,10 @@ export const useMicrophone = () => {
 export const MicrophoneProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [microphoneResult, setMicrophoneResult] = useState<string>('');
   const [isListening, setIsListening] = useState<boolean>(false);
+  const [isProcessing, setIsProcessing] = useState<boolean>(false);
 
   return (
-    <MicrophoneContext.Provider value={{ microphoneResult, setMicrophoneResult, isListening, setIsListening }}>
+    <MicrophoneContext.Provider value={{ microphoneResult, setMicrophoneResult, isListening, setIsListening, isProcessing, setIsProcessing }}>
       {children}
     </MicrophoneContext.Provider>
   );

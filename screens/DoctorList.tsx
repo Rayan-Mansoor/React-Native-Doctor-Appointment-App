@@ -1,5 +1,5 @@
 // DoctorList.js
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, TextInput, Alert } from 'react-native';
 import { Image } from 'expo-image';
 import { FontAwesome } from '@expo/vector-icons';
@@ -11,10 +11,10 @@ import { useSelector } from 'react-redux';
 import { RootState } from '../storage/reduxStore';
 import { useTheme } from '../context/ThemeProvider';
 import i18n from '../localization/i18n';
-import { rootNavigation } from '../components/RootNavigation';
-import { useFocusEffect } from '@react-navigation/native';
-import { useMicrophone } from '../context/MicrophoneProvider';
-import { useTensorFlow } from '../context/TFModelProvider';
+import { useVoiceCommand, VoiceCommandContextProps } from '../context/VoiceCommandProvider';
+import { useFocusEffect, useIsFocused } from '@react-navigation/native';
+import { extractPersonNames } from '../network/api';
+import { matchPersonName } from '../utils/utilityFunctions';
 
 type Props = NativeStackScreenProps<LandingStackParams, 'DoctorList'>
 
@@ -22,66 +22,50 @@ const DoctorList: React.FC<Props> = ({route, navigation}) => {
   const language = useSelector((state: RootState) => state.language.locale);
   const adjustmentFactor = useSelector((state: RootState) => state.size.adjustmentFactor);
   const theme = useTheme()
-  const { microphoneResult, setMicrophoneResult } = useMicrophone();
-  const { classifyIntent } = useTensorFlow();
+  const passdownData = useVoiceCommand();
+  const isFocused = useIsFocused();
 
-  const microphoneResultRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (isFocused && passdownData.prediction) {
+      console.log("DoctorList with passdown data:", passdownData);
+      handleVoiceCommand(passdownData.sentence, passdownData.prediction).then(() => {
+        passdownData.commandCompleted();
+      })
+      passdownData.resetContextValue();
+    }
+  }, [passdownData, isFocused]);
+
   const [searchQuery, setSearchQuery] = useState('');
 
   const steps = ['Step 1', 'Step 2', 'Step 3'];
   const currentStep = 2;
 
-  useFocusEffect(
-    React.useCallback(() => {
-      microphoneResultRef.current = microphoneResult;
-
-      return () => {
-        microphoneResultRef.current = null;
-      };
-    }, [microphoneResult])
-  );
-
   useEffect(() => {
     i18n.locale = language;
   }, [language]);
 
-  useEffect(() => {
-    if (microphoneResultRef.current) {
-      handleVoiceCommand(microphoneResultRef.current);
-      console.log('Microphone Result:', microphoneResultRef.current);
-      setMicrophoneResult('')
-    }
-  }, [microphoneResult, setMicrophoneResult]);
-
-  const handleVoiceCommand = async (command: string | null) => {
-    if (!command) return;
-
-    const prediction = await classifyIntent(command)
-    console.log(`Predicted Intent: ${prediction}`)
-
+  const handleVoiceCommand = async (command: string, prediction: string) => {
     switch (prediction) {
-      case "navigate_home":
-        rootNavigation('Home')
-        break;
-      case "navigate_appointments":
-        rootNavigation('MyAppointments')
-        break;
-      case "navigate_setting":
-        rootNavigation('Settings');
-        break;
-      case "book_appointment":
-        navigation.navigate('DoctorCategory');
-        break;
       case "select_doctor":
-        const matchedDoctor = filteredDoctors.find(doctor => {
-          const doctorNameNormalized = doctor.name.toLowerCase().replace('dr. ', '');
-          return command.includes(doctorNameNormalized);
-        });
-    
-        if (matchedDoctor) {
-          handleDoctorSelect(matchedDoctor);
+        const doctorName = await extractPersonNames(command);
+        if (doctorName.length !== 0) {
+          const doctorNamesList = filteredDoctors.map((doctor: Doctor) => doctor.name);
+          const matchedDoctorName = matchPersonName(doctorName[0], doctorNamesList);
+      
+          if (matchedDoctorName) {
+            const matchedDoctor = filteredDoctors.find((doctor) => doctor.name === matchedDoctorName);
+            
+            if (matchedDoctor) {
+              handleDoctorSelect(matchedDoctor);
+            } else {
+              console.log('Doctor not found.');
+            }
+          } else {
+            console.log('No match found.');
+          }
         }
         break;
+
       default:
         console.log('Command not recognized.');
         break;
@@ -116,7 +100,7 @@ const DoctorList: React.FC<Props> = ({route, navigation}) => {
             <View style={styles.doctorInfo}>
               <Text style={[styles.doctorName, {fontSize: 18 + adjustmentFactor}]}>{i18n.t('doctor')} {doctor.name}</Text>
               <Text style={[styles.doctorSpecialty, {fontSize: 14 + adjustmentFactor}]}>{i18n.t(doctor.specialty.toLowerCase())}, {doctor.location}</Text>
-              <View style={styles.rating}>
+              <View style={[styles.rating, language == 'ur' && { alignSelf: 'flex-end' }]}>
                 <FontAwesome name="star" size={14 + adjustmentFactor} color={theme.rating}/>
                 <Text style={[styles.ratingText, {fontSize: 14 + adjustmentFactor}]}>{doctor.rating}</Text>
               </View>
@@ -152,6 +136,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 10,
     paddingLeft: 10,
+    paddingRight: 10,
     marginBottom: 20,
     backgroundColor: '#fff',
   },

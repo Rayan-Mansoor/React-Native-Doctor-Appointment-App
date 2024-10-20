@@ -28,6 +28,8 @@ import 'react-native-get-random-values'
 import { LogBox } from 'react-native';
 import { TensorFlowProvider } from './context/TFModelProvider';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { VoiceCommandProvider } from './context/VoiceCommandProvider';
+import LoadingToast from './components/LoadingToast';
 
 const HEALTH_TIP_NOTIFICATION_TASK = 'health-tip-notification';
 
@@ -47,7 +49,7 @@ function MainApp() {
   const colorScheme = useColorScheme();
   const theme = useTheme();
   useVolumeButtonListener();
-  const { isListening } = useMicrophone();
+  const { isListening, isProcessing } = useMicrophone();
 
   const requestNotificationPermission = async () => {
     if (Platform.OS === 'android') {
@@ -99,6 +101,7 @@ function MainApp() {
         </Tab.Navigator>
       </NavigationContainer>
       {isListening && <RecordingToast />}
+      {isProcessing && <LoadingToast />}
     </View>
   );
 }
@@ -108,13 +111,15 @@ export default function App() {
     <Provider store={store}>
       <TensorFlowProvider>
         <MicrophoneProvider>
-          <ThemeProvider>
-            <TooltipProvider>
-              <GestureHandlerRootView>
-                <MainApp />
-              </GestureHandlerRootView>
-            </TooltipProvider>
-          </ThemeProvider>
+          <VoiceCommandProvider>
+            <ThemeProvider>
+              <TooltipProvider>
+                <GestureHandlerRootView>
+                  <MainApp />
+                </GestureHandlerRootView>
+              </TooltipProvider>
+            </ThemeProvider>
+          </VoiceCommandProvider>
         </MicrophoneProvider>
       </TensorFlowProvider>
     </Provider>

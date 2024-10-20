@@ -23,6 +23,7 @@ export const useTensorFlow = () => {
   if (!context) {
     throw new Error('useTensorFlow must be used within a TensorFlowProvider');
   }
+
   return context;
 };
 

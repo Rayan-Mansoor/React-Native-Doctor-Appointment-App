@@ -1,3 +1,4 @@
+import Fuse from 'fuse.js';
 import englishHealthTipsData from '../storage/data/en_health_tips.json'
 import urduHealthTipsData from '../storage/data/ur_health_tips.json'
 
@@ -119,3 +120,12 @@ export function extractPhoneNo(sentence: string): string | null {
   return matches ? matches[0] : null;
 }
 
+export function matchPersonName(query: string, list: string[]): string | null  {
+  const fuse = new Fuse(list, {
+    includeScore: true,
+    threshold: 0.3,
+  });
+
+  const result = fuse.search(query);
+  return result.length > 0 ? result[0].item : null;
+}

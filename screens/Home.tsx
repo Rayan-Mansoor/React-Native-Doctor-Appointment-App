@@ -7,9 +7,9 @@ import { useDispatch, useSelector } from 'react-redux';
 import { RootState, setComponentOrder } from '../storage/reduxStore';
 import { useTheme } from '../context/ThemeProvider';
 import { useMicrophone } from '../context/MicrophoneProvider';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useIsFocused } from '@react-navigation/native';
 import TypeWriterEffect from '../components/TypeWriterEffect';
-import { getRandomHealthTip } from '../utils/utilityFunctions';
+import { getRandomHealthTip, matchPersonName } from '../utils/utilityFunctions';
 import * as Speech from 'expo-speech';
 import { LandingStackParams } from './LandingPage';
 import { useTooltip } from '../context/TooltipProvider';
@@ -20,6 +20,8 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useFonts } from 'expo-font';
 import { useTensorFlow } from '../context/TFModelProvider';
 import DraggableFlatList, { RenderItemParams } from 'react-native-draggable-flatlist';
+import { useVoiceCommand, VoiceCommandContextProps } from '../context/VoiceCommandProvider';
+import { extractPersonNames } from '../network/api';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -31,12 +33,24 @@ const Home: React.FC<Props> = ({navigation}) => {
   const adjustmentFactor = useSelector((state: RootState) => state.size.adjustmentFactor);
   const componentOrder = useSelector((state: RootState) => state.componentOrder.homeScreen);
   const theme = useTheme();
-  const { microphoneResult, setMicrophoneResult } = useMicrophone();
-  const microphoneResultRef = useRef<string | null>(null);
   const [healthTip, setHealthTip] = useState('');
   const [isDraggable, setIsDraggable] = useState(false);
   const { showTooltip, hideTooltip } = useTooltip();
-  const { classifyIntent } = useTensorFlow();
+  const passdownData = useVoiceCommand();
+  const isFocused = useIsFocused();
+
+  useEffect(() => {
+    if (isFocused && passdownData.prediction) {
+      console.log("Home with passdown data:", passdownData);
+      handleVoiceCommand(passdownData.sentence, passdownData.prediction).then(() => {
+        passdownData.commandCompleted();
+      })
+  
+      // Reset the context value after handling
+      passdownData.resetContextValue();
+    }
+  }, [passdownData, isFocused]);
+  
   const [fontsLoaded, fontError] = useFonts({
     'Roboto-Bold': require('../fonts/Roboto/Roboto-Bold.ttf'),
     'Roboto-Regular': require('../fonts/Roboto/Roboto-Regular.ttf'),
@@ -56,24 +70,6 @@ const Home: React.FC<Props> = ({navigation}) => {
       await SplashScreen.hideAsync();
     }
   }, [fontsLoaded, fontError]);
-
-  useFocusEffect(
-    useCallback(() => {
-      microphoneResultRef.current = microphoneResult;
-
-      return () => {
-        microphoneResultRef.current = null;
-      };
-    }, [microphoneResult])
-  );
-
-  useEffect(() => {
-    if (microphoneResultRef.current) {
-      handleVoiceCommand(microphoneResultRef.current);
-      console.log('Microphone Result:', microphoneResultRef.current);
-      setMicrophoneResult('')
-    }
-  }, [microphoneResult, setMicrophoneResult]);
   
   useEffect(() => {
     i18n.locale = language;
@@ -82,29 +78,25 @@ const Home: React.FC<Props> = ({navigation}) => {
     setHealthTip(randomTip);
   }, [language]);
 
-  const handleVoiceCommand = async (command: string | null) => {
-    if (!command) return;
-
-    const prediction = await classifyIntent(command)
-    console.log(`Predicted Intent: ${prediction}`)
-
+  const handleVoiceCommand = async (command: string, prediction: string) => {
     switch (prediction) {
-      case "navigate_appointments":
-        rootNavigation('MyAppointments')
-        break;
-      case "navigate_setting":
-        rootNavigation('Settings');
-        break;
-      case "book_appointment":
-        navigation.navigate('DoctorCategory');
-        break;
       case "select_doctor":
-        const matchedDoctor = featuredDoctors.find(doctor => {
-          return command!!.includes(doctor.name.toLowerCase());
-        });
-  
-        if (matchedDoctor) {
-          handlefeaturedDoctor(matchedDoctor);
+        const doctorName = await extractPersonNames(command);
+        if (doctorName.length !== 0) {
+          const doctorNamesList = doctors.map((doctor: Doctor) => doctor.name);
+          const matchedDoctorName = matchPersonName(doctorName[0], doctorNamesList);
+      
+          if (matchedDoctorName) {
+            const matchedDoctor = doctors.find((doctor) => doctor.name.toLowerCase() === matchedDoctorName.toLowerCase());
+            
+            if (matchedDoctor) {
+              handlefeaturedDoctor(matchedDoctor);
+            } else {
+              console.log('Doctor not found.');
+            }
+          } else {
+            console.log('No match found.');
+          }
         }
         break;
       default:

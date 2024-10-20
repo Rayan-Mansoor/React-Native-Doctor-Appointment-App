@@ -6,16 +6,18 @@ import Voice from '@react-native-voice/voice';
 import i18n from '../localization/i18n';
 
 const useVolumeButtonListener = () => {
-  const { setMicrophoneResult, setIsListening } = useMicrophone();
+  const { setMicrophoneResult, setIsListening, setIsProcessing } = useMicrophone();
   const lastKeyUpTimeRef = useRef(0);
 
   Voice.onSpeechError = () => {
     setIsListening(false);
+    setIsProcessing(false)
 }
 
 
   Voice.onSpeechResults = speechResult => {
       if(speechResult.value){
+          setIsProcessing(true)
           setMicrophoneResult(speechResult.value[0])
         }
       setIsListening(false);

@@ -3,81 +3,54 @@ import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Switch
 import Slider from '@react-native-community/slider';
 import i18n from '../localization/i18n';
 import RadioButton from '../components/RadioButton'
-import { RootState, setAdjustmentFactor, setEmail, setLanguage, setName, setPhone, setTheme } from '../storage/reduxStore';
+import { RootState, setAdjustmentFactor, setColorBlindTheme, setEmail, setLanguage, setName, setPhone, toggleColorBlindMode } from '../storage/reduxStore';
 import { useDispatch, useSelector } from 'react-redux';
 import { useTheme } from '../context/ThemeProvider';
-import { useFocusEffect } from '@react-navigation/native';
-import { useMicrophone } from '../context/MicrophoneProvider';
+import { useIsFocused } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import * as Notifications from 'expo-notifications';
 import {storage as mmkvStorage} from '../storage/mmkvStorage'
 import { RootTabParams } from '../App';
-import { rootNavigation } from '../components/RootNavigation';
 import { extractEmail, extractPhoneNo } from '../utils/utilityFunctions';
-import { useTensorFlow } from '../context/TFModelProvider';
+import { useVoiceCommand } from '../context/VoiceCommandProvider';
+import { extractPersonNames } from '../network/api';
 
 type Props = NativeStackScreenProps<RootTabParams, 'Settings'>
 
 const Settings: React.FC<Props> = ({navigation}) => {
   const language = useSelector((state: RootState) => state.language.locale);
-  const currentTheme = useSelector((state: RootState) => state.theme.theme);
+  const { isColorBlindMode, colorBlindTheme } = useSelector((state: RootState) => state.theme);
   const adjustmentFactor = useSelector((state: RootState) => state.size.adjustmentFactor);
   const user = useSelector((state: RootState) => state.user);
-
   const theme = useTheme();
+  const passdownData = useVoiceCommand();
+  const isFocused = useIsFocused();
 
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-  const [colorBlindnessEnabled, setColorBlindnessEnabled] = useState(false);
-  const [colorBlindnessType, setColorBlindnessType] = useState<string>(currentTheme);
-  const { microphoneResult, setMicrophoneResult } = useMicrophone();
-  const { classifyIntent } = useTensorFlow();
-  const microphoneResultRef = useRef<string | null>(null);
-
-  useFocusEffect(
-    React.useCallback(() => {
-      microphoneResultRef.current = microphoneResult;
-
-      return () => {
-        microphoneResultRef.current = null;
-      };
-    }, [microphoneResult])
-  );
+  useEffect(() => {
+    if (isFocused && passdownData.prediction) {
+      console.log("Settings with passdown data:", passdownData);
+      handleVoiceCommand(passdownData.sentence, passdownData.prediction).then(() => {
+        passdownData.commandCompleted();
+      })
+      passdownData.resetContextValue();
+    }
+  }, [passdownData, isFocused]);
+  
+  const [ notificationsEnabled, setNotificationsEnabled ] = useState(true);
 
   useEffect(() => { 
     getNotificationState()
    }, [])
 
-   useEffect(() => {
-    if (microphoneResultRef.current) {
-      handleVoiceCommand(microphoneResultRef.current);
-      console.log('Microphone Result:', microphoneResultRef.current);
-      setMicrophoneResult('')
-    }
-  }, [microphoneResult, setMicrophoneResult]);
-  
 
-  useEffect(() => {
-    if(currentTheme !== 'normal'){
-      setColorBlindnessEnabled(true)
-    }
-  }, [currentTheme]);
-
-  const handleVoiceCommand = async (command: string | null) => {
-    if (!command) return;
-
-    const prediction = await classifyIntent(command)
-    console.log(`Predicted Intent: ${prediction}`)
+  const handleVoiceCommand = async (command: string, prediction: string) => {
 
     switch (prediction) {
-      case "navigate_home":
-        rootNavigation('Home');
-        break;
-      case "navigate_appointments":
-        rootNavigation('MyAppointments')
-        break;
       case "update_name":
-        const newName = command.split("change name to ")[1];
-        handleBioChange('name', newName);
+        const newName = await extractPersonNames(command)
+        if(newName.length != 0){
+          handleBioChange('name', newName[0]);
+        }
         break;
       case "update_email":
         const newEmail = extractEmail(command)
@@ -91,39 +64,14 @@ const Settings: React.FC<Props> = ({navigation}) => {
           handleBioChange('phone', newPhoneNo);
         }
         break;
-      case "increase_font_size":
-        handleSizeChange(adjustmentFactor + 2);
-        break;
-      case "decrease_font_size":
-        handleSizeChange(adjustmentFactor - 2);
-        break;
+
       case "turn_on_notifications":
         setNotificationsEnabled(true);
         break;
       case "turn_off_notifications":
         setNotificationsEnabled(false);
         break;
-      case "set_language_english":
-        handleLanguageChange('en');
-        break;
-      case "set_language_urdu":
-        handleLanguageChange('ur');
-        break;
-      case "enable_color_blindness":
-        handleColorBlindnessToggle();
-        break;
-      case "disable_color_blindness":
-        handleColorBlindnessToggle();
-        break;
-      case "set_protanopia_mode":
-        handleColorBlindnessChange('protanopia');
-        break;
-      case "set_deuteranopia_mode":
-        handleColorBlindnessChange('deuteranopia');
-        break;
-      case "set_tritanopia_mode":
-        handleColorBlindnessChange('tritanopia');
-        break;
+
       default:
         console.log('Command not recognized.');
         break;
@@ -234,17 +182,11 @@ const Settings: React.FC<Props> = ({navigation}) => {
   };
 
   const handleColorBlindnessChange = (type: string) => {
-    setColorBlindnessType(type);
-    dispatch(setTheme(type.toLowerCase()));
+    dispatch(setColorBlindTheme(type.toLowerCase()));
   };
 
   const handleColorBlindnessToggle = () => {
-    setColorBlindnessEnabled((prev) => !prev);
-    if (colorBlindnessEnabled) {
-      dispatch(setTheme('normal'));
-    } else {
-      dispatch(setTheme(colorBlindnessType.toLowerCase()));
-    }
+    dispatch(toggleColorBlindMode(!isColorBlindMode));
   };
 
   return (
@@ -257,7 +199,7 @@ const Settings: React.FC<Props> = ({navigation}) => {
         <TextInput
           style={[styles.input, {fontSize: 13 + adjustmentFactor, backgroundColor: theme.card}]}
           value={user.name}
-          placeholder='John Doe'
+          placeholder='Rayan Mansoor'
           onChangeText={(value) => handleBioChange('name', value)}
         />
       </View>
@@ -266,7 +208,7 @@ const Settings: React.FC<Props> = ({navigation}) => {
         <TextInput
           style={[styles.input, {fontSize: 13 + adjustmentFactor, backgroundColor: theme.card}]}
           value={user.email}
-          placeholder='john@example.com'
+          placeholder='rayanmansoor45@gmail.com'
           onChangeText={(value) => handleBioChange('email', value)}
         />
       </View>
@@ -328,19 +270,19 @@ const Settings: React.FC<Props> = ({navigation}) => {
       <View style={styles.switchContainer}>
         <Text style={[styles.sectionHeader, {fontSize: 20 + adjustmentFactor}]}>{i18n.t('color_blindness')}</Text>        
         <Switch
-          value={colorBlindnessEnabled}
+          value={isColorBlindMode}
           onValueChange={handleColorBlindnessToggle}
-          thumbColor={colorBlindnessEnabled ? theme.primaryThumb : theme.secondaryThumb}
+          thumbColor={isColorBlindMode ? theme.primaryThumb : theme.secondaryThumb}
           trackColor={{ false: theme.primaryTrack, true: theme.primaryTrack }}
         />
       </View>
 
-      {colorBlindnessEnabled && (
+      {isColorBlindMode && (
         <View style={styles.colorBlindnessContainer}>
           <TouchableOpacity
             style={[
               styles.colorBlindnessOption,
-              colorBlindnessType === 'protanopia' && {borderColor: theme.primaryMain},
+              colorBlindTheme === 'protanopia' && {borderColor: theme.primaryMain},
               styles.leftOption,
             ]}
             onPress={() => handleColorBlindnessChange('protanopia')}
@@ -350,7 +292,7 @@ const Settings: React.FC<Props> = ({navigation}) => {
           <TouchableOpacity
             style={[
               styles.colorBlindnessOption,
-              colorBlindnessType === 'deuteranopia' && {borderColor: theme.primaryMain},
+              colorBlindTheme === 'deuteranopia' && {borderColor: theme.primaryMain},
             ]}
             onPress={() => handleColorBlindnessChange('deuteranopia')}
           >
@@ -359,7 +301,7 @@ const Settings: React.FC<Props> = ({navigation}) => {
           <TouchableOpacity
             style={[
               styles.colorBlindnessOption,
-              colorBlindnessType === 'tritanopia' && {borderColor: theme.primaryMain},
+              colorBlindTheme === 'tritanopia' && {borderColor: theme.primaryMain},
               styles.rightOption,
             ]}
             onPress={() => handleColorBlindnessChange('tritanopia')}
