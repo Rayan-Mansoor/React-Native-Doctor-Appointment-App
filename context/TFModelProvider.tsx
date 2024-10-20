@@ -11,9 +11,13 @@ const urduTokenizer = require('../assets/machine_learning/urdu/tokenizer.json');
 const englishLabelEncoder = require('../assets/machine_learning/english/label_encoder.json');
 const urduLabelEncoder = require('../assets/machine_learning/urdu/label_encoder.json');
 
+export type Prediction = {
+  label: string; 
+  confidence: number; 
+}
 
 interface TensorFlowContextProps {
-  classifyIntent: (text: string) => Promise<string | undefined>;
+  classifyIntent: (text: string) => Promise<Prediction>;
 }
 
 export const TensorFlowContext = createContext<TensorFlowContextProps | undefined>(undefined);
@@ -65,8 +69,10 @@ export const TensorFlowProvider: React.FC<{ children: ReactNode }> = ({ children
     return paddedSequence;
   };
   
-  const classifyIntent = async (text: string): Promise<string> => {
-    if (!model) return 'Model not loaded';
+  const classifyIntent = async (text: string): Promise<Prediction> => {
+    if (!model) {
+      throw new Error('Model not loaded');
+    }
   
     try {
       const tokens = tokenize(text);
@@ -77,11 +83,16 @@ export const TensorFlowProvider: React.FC<{ children: ReactNode }> = ({ children
   
       const predictedLabelIndex = Array.from(predictionVector).indexOf(Math.max(...predictionVector));
       const predictedLabel = labelEncoder.classes_[predictedLabelIndex];
+      const confidence = predictionVector[predictedLabelIndex]; 
   
-      return predictedLabel;
+      return {    
+        label: predictedLabel,
+        confidence: confidence
+      };
+
     } catch (error) {
       console.error('Classification error:', error);
-      return 'Error classifying intent';
+      throw new Error('Error classifying intent');
     }
   };
 

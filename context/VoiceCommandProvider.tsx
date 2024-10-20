@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { decrementAdjustmentFactor, incrementAdjustmentFactor, RootState, setColorBlindTheme, setEmail, setLanguage, setName, setPhone, toggleColorBlindMode } from '../storage/reduxStore';
 import { rootNavigation } from '../components/RootNavigation';
 import { useMicrophone } from './MicrophoneProvider';
-import { useTensorFlow } from './TFModelProvider';
+import { Prediction, useTensorFlow } from './TFModelProvider';
 
 export interface VoiceCommandContextProps {
     prediction: string;
@@ -78,10 +78,7 @@ export const VoiceCommandProvider: React.FC<{ children: ReactNode }> = ({ childr
       };
       
     const handleVoiceCommand = async (command: string) => {
-      if (!command) {
-        commandCompleted();
-        return;
-      }
+      let prediction: Prediction | undefined;
       const noCompletionRequired = [
         "update_name", 
         "update_email", 
@@ -92,87 +89,97 @@ export const VoiceCommandProvider: React.FC<{ children: ReactNode }> = ({ childr
         "reschedule_appointment", 
         "cancel_appointment"
       ];
-  
-      const prediction = await classifyIntent(command);
-      console.log(`Predicted Intent: ${prediction}`);
-  
-      switch (prediction) {
-        case "navigate_home":
-          rootNavigation('Home');
-          break;
-        case "navigate_appointments":
-          rootNavigation('MyAppointments')
-          break;
-        case "navigate_setting":
-          rootNavigation('Settings')
-          break;
-        case "book_appointment":
-          rootNavigation('DoctorCategory')
-          break;
-        case "select_orthodontics":
-          rootNavigation('DoctorList', { category: "Orthodontics" })
-          break;
-        case "select_prosthodontics":
-          rootNavigation('DoctorList', { category: "Prosthodontics" })
-          break;
-        case "select_endodontics":
-          rootNavigation('DoctorList', { category: "Endodontics" })
-          break;
-        case "select_periodontics":
-          rootNavigation('DoctorList', { category: "Periodontics" })
-          break;
-        case "select_pedodontics":
-          rootNavigation('DoctorList', { category: "Pedodontics" })
-          break;
-        case "select_oral_surgery":
-          rootNavigation('DoctorList', { category: "Oral Surgery" })
-          break;
-        case "increase_font_size":
-          handleSizeChange('increment');
-          break;
-        case "decrease_font_size":
-          handleSizeChange('decrement');
-          break;
-        case "set_language_english":
-          handleLanguageChange('en');
-          break;
-        case "set_language_urdu":
-          handleLanguageChange('ur');
-          break;
-        case "enable_color_blindness":
-          handleToggleColorBlindMode(true);
-          break;
-        case "disable_color_blindness":
-          handleToggleColorBlindMode(false);
-          break;
-        case "set_protanopia_mode":
-          handleColorBlindThemeChange('protanopia');
-          break;
-        case "set_deuteranopia_mode":
-          handleColorBlindThemeChange('deuteranopia');
-          break;
-        case "set_tritanopia_mode":
-          handleColorBlindThemeChange('tritanopia');
-          break;
-        case "update_name":
-        case "update_email":
-        case "update_phone_number":
-        case "turn_on_notifications":
-        case "turn_off_notifications":
-        case "select_doctor":
-        case "reschedule_appointment":
-        case "cancel_appointment":
-          handlePassdown(prediction)
+
+      try {
+        if (!command) {
+          commandCompleted();
           return;
-
-        default:
-          console.log('Command not recognized.');
-          break;
         }
-
-        if (!noCompletionRequired.includes(prediction!!)) {
+ 
+        prediction = await classifyIntent(command);
+        console.log(`Predicted Intent: ${prediction.label}`);
+        console.log(`Confidence: ${prediction.confidence}`);
+    
+        switch (prediction.label) {
+          case "navigate_home":
+            rootNavigation('Home');
+            break;
+          case "navigate_appointments":
+            rootNavigation('MyAppointments')
+            break;
+          case "navigate_setting":
+            rootNavigation('Settings')
+            break;
+          case "book_appointment":
+            rootNavigation('DoctorCategory')
+            break;
+          case "select_orthodontics":
+            rootNavigation('DoctorList', { category: "Orthodontics" })
+            break;
+          case "select_prosthodontics":
+            rootNavigation('DoctorList', { category: "Prosthodontics" })
+            break;
+          case "select_endodontics":
+            rootNavigation('DoctorList', { category: "Endodontics" })
+            break;
+          case "select_periodontics":
+            rootNavigation('DoctorList', { category: "Periodontics" })
+            break;
+          case "select_pedodontics":
+            rootNavigation('DoctorList', { category: "Pedodontics" })
+            break;
+          case "select_oral_surgery":
+            rootNavigation('DoctorList', { category: "Oral Surgery" })
+            break;
+          case "increase_font_size":
+            handleSizeChange('increment');
+            break;
+          case "decrease_font_size":
+            handleSizeChange('decrement');
+            break;
+          case "set_language_english":
+            handleLanguageChange('en');
+            break;
+          case "set_language_urdu":
+            handleLanguageChange('ur');
+            break;
+          case "enable_color_blindness":
+            handleToggleColorBlindMode(true);
+            break;
+          case "disable_color_blindness":
+            handleToggleColorBlindMode(false);
+            break;
+          case "set_protanopia_mode":
+            handleColorBlindThemeChange('protanopia');
+            break;
+          case "set_deuteranopia_mode":
+            handleColorBlindThemeChange('deuteranopia');
+            break;
+          case "set_tritanopia_mode":
+            handleColorBlindThemeChange('tritanopia');
+            break;
+          case "update_name":
+          case "update_email":
+          case "update_phone_number":
+          case "turn_on_notifications":
+          case "turn_off_notifications":
+          case "select_doctor":
+          case "reschedule_appointment":
+          case "cancel_appointment":
+            handlePassdown(prediction.label)
+            return;
+  
+          default:
+            console.log('Command not recognized.');
+            break;
+          }
+      } catch (error) {
+        console.error('Error during intent classification:', error);
+      } finally {
+        if (!prediction || !noCompletionRequired.includes(prediction.label)) {
           commandCompleted();
         }
+      }
     };
   
     useEffect(() => {
